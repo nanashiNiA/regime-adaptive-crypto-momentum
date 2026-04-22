@@ -1,0 +1,92 @@
+================================================================================
+  V24 6-ASSET SHUFFLE TEST (200 iterations x 3 types)
+================================================================================
+
+[1] Loading 6 assets...
+
+[2] Running real model (6 assets, cap=3.0, KF=0.15)...
+  Real: WFS=369% MaxDD=-24.6% Bear22=+211% Win=40/45
+
+[3] Return shuffle (1000 iterations)...
+    50/1000 done
+    100/1000 done
+    150/1000 done
+    200/1000 done
+    250/1000 done
+    300/1000 done
+    350/1000 done
+    400/1000 done
+    450/1000 done
+    500/1000 done
+    550/1000 done
+    600/1000 done
+    650/1000 done
+    700/1000 done
+    750/1000 done
+    800/1000 done
+    850/1000 done
+    900/1000 done
+    950/1000 done
+    1000/1000 done
+  Return shuffle: real=369% shuffle_mean=59% std=9% p=0.000 PASS
+
+[4] Block shuffle 30d (1000 iterations)...
+    50/1000 done
+    100/1000 done
+    150/1000 done
+    200/1000 done
+    250/1000 done
+    300/1000 done
+    350/1000 done
+    400/1000 done
+    450/1000 done
+    500/1000 done
+    550/1000 done
+    600/1000 done
+    650/1000 done
+    700/1000 done
+    750/1000 done
+    800/1000 done
+    850/1000 done
+    900/1000 done
+    950/1000 done
+    1000/1000 done
+  Block shuffle: real=369% shuffle_mean=69% std=16% p=0.000 PASS
+
+[5] Position shuffle (1000 iterations)...
+    50/1000 done
+    100/1000 done
+    150/1000 done
+    200/1000 done
+    250/1000 done
+    300/1000 done
+    350/1000 done
+    400/1000 done
+    450/1000 done
+    500/1000 done
+    550/1000 done
+    600/1000 done
+    650/1000 done
+    700/1000 done
+    750/1000 done
+    800/1000 done
+    850/1000 done
+    900/1000 done
+    950/1000 done
+    1000/1000 done
+  Position shuffle: real=369% shuffle_mean=37% std=11% p=0.000 PASS
+
+================================================================================
+  SUMMARY (6-asset, cap=3.0, KF=0.15, realistic slippage)
+================================================================================
+  Real model:
+    WFS: 369%
+    MaxDD: -24.6%
+    Bear 2022: +211%
+    Win: 40/45
+    Fold mean: 30.8%  median: 16.3%
+
+  Shuffle tests (N=1000):
+    [1] Return:   real=369% vs shuffle=59%+/-9%  p=0.000 PASS
+    [2] Block30d: real=369% vs shuffle=69%+/-16%  p=0.000 PASS
+    [3] Position: real=369% vs shuffle=37%+/-11%  p=0.000 PASS
