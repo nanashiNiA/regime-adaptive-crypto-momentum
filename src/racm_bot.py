@@ -1,179 +1,81 @@
 """
-RACM Production Bot - Regime-Adaptive Cross-Sectional Crypto Momentum
-Phase 1: Paper trading with Binance data pipeline
+RACM Production Bot - Uses racm_core.py for all signal logic.
+Single source of truth: no duplicated formulas.
 
 Usage:
-    # First run (builds warmup from history):
-    python -m src.racm_bot --mode paper --initial-capital 1000000
-
-    # Subsequent runs (loads state):
-    python -m src.racm_bot --mode paper
+    python -m src.racm_bot --mode paper --once
+    python -m src.racm_bot --mode paper --interval 3600
 """
 import sys, os, time, json, logging, pickle, argparse
 from datetime import datetime, timezone
 from pathlib import Path
-from dataclasses import dataclass, field, asdict
-from typing import Optional
+from dataclasses import dataclass, field
 
 import numpy as np
 import pandas as pd
 import urllib.request
 
+from src.racm_core import (RACMParams, RACMFeatures, RACMRegime,
+                           RACMCryptoGates, RACMKelly, RACMDDControl,
+                           RACMLS, safe_val)
+
 if sys.platform == 'win32':
     try: sys.stdout.reconfigure(encoding='utf-8')
     except: pass
 
-# ─── Config ───
-@dataclass
-class RACMConfig:
-    # Assets
-    assets: list = field(default_factory=lambda: ['BTC','ETH','SOL','XRP','DOGE','LINK'])
-    slippage_bps: dict = field(default_factory=lambda: {'BTC':3,'ETH':3,'SOL':5,'XRP':5,'DOGE':5,'LINK':8})
-
-    # LS Momentum
-    ls_lookbacks_days: list = field(default_factory=lambda: [60, 90])
-    ls_rebalance_hours: int = 8
-    ls_weight: float = 0.80  # LW
-
-    # Regime
-    regime_ma_days: int = 110
-    regime_ma_short_days: int = 20
-    regime_skew_threshold: float = -0.5
-    regime_dd_threshold: float = -0.12
-    regime_check_hours: int = 1
-
-    # Crypto quality gates
-    funding_z_long: float = -1.5
-    funding_z_short: float = 2.0
-    oi_z_threshold: float = -1.5
-    liq_z_threshold: float = 2.0
-    grind_atr_threshold: float = 0.006
-    crash_danger_count: int = 3
-
-    # Position sizing
-    kelly_fraction: float = 0.15
-    position_cap: float = 3.0
-    vol_target_base: float = 1.5
-    kelly_lookback_days: int = 90
-
-    # DD control
-    dd_level1: float = -0.15
-    dd_mult1: float = 0.7
-    dd_level2: float = -0.22
-    dd_mult2: float = 0.4
-    dd_level3: float = -0.30
-    dd_mult3: float = 0.1
-
-    # Execution
-    fee_bps: float = 0.0  # Lighter.xyz = 0
-    crypto_alpha_weight: float = 0.10
-
-    # State
-    state_dir: str = 'data/bot_state'
-    log_dir: str = 'logs/racm_bot'
-
 
 # ─── Data Pipeline ───
 class BinanceDataPipeline:
-    """Fetch real-time and historical data from Binance API"""
-
     BASE_URL = 'https://api.binance.com/api/v3'
     FUTURES_URL = 'https://fapi.binance.com/fapi/v1'
-
-    def __init__(self, config: RACMConfig):
-        self.config = config
 
     def _fetch(self, url):
         req = urllib.request.Request(url, headers={'User-Agent': 'RACM-Bot/1.0'})
         with urllib.request.urlopen(req, timeout=15) as r:
             return json.loads(r.read())
 
-    def fetch_klines(self, symbol: str, interval: str, limit: int = 1000) -> pd.DataFrame:
-        """Fetch OHLCV klines"""
-        url = f'{self.BASE_URL}/klines?symbol={symbol}USDT&interval={interval}&limit={limit}'
-        data = self._fetch(url)
-        df = pd.DataFrame(data, columns=['timestamp','open','high','low','close','volume',
-                                          'close_time','quote_vol','trades','taker_buy_base',
-                                          'taker_buy_quote','ignore'])
+    def fetch_klines(self, symbol: str, interval: str, limit: int = 1000,
+                     pages: int = 1) -> pd.DataFrame:
+        all_data = []
+        et = int(datetime.now(timezone.utc).timestamp() * 1000)
+        for _ in range(pages):
+            url = f'{self.BASE_URL}/klines?symbol={symbol}USDT&interval={interval}&limit={limit}&endTime={et}'
+            data = self._fetch(url)
+            if not data: break
+            all_data.extend(data)
+            et = int(data[0][0]) - 1
+        df = pd.DataFrame(all_data, columns=[
+            'timestamp','open','high','low','close','volume',
+            'close_time','quote_vol','trades','taker_buy_base','taker_buy_quote','ignore'])
         df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-        df = df.set_index('timestamp')
+        df = df.drop_duplicates('timestamp').set_index('timestamp').sort_index()
         for col in ['open','high','low','close','volume']:
             df[col] = df[col].astype(float)
         df['return'] = df['close'].pct_change()
         return df.dropna(subset=['return'])
 
     def fetch_funding_rate(self, limit: int = 500) -> pd.DataFrame:
-        """Fetch BTC perpetual funding rate"""
         url = f'{self.FUTURES_URL}/fundingRate?symbol=BTCUSDT&limit={limit}'
         data = self._fetch(url)
         df = pd.DataFrame(data)
         df['fundingTime'] = pd.to_datetime(df['fundingTime'], unit='ms')
         df['fundingRate'] = df['fundingRate'].astype(float)
-        df = df.set_index('fundingTime').sort_index()
-        return df
+        return df.set_index('fundingTime').sort_index()
 
-    def fetch_open_interest(self) -> float:
-        """Fetch current BTC open interest"""
+    def fetch_open_interest_hist(self, limit: int = 200) -> pd.DataFrame:
         url = f'{self.FUTURES_URL}/openInterest?symbol=BTCUSDT'
         data = self._fetch(url)
         return float(data['openInterest'])
 
-    def fetch_all_1h(self, lookback_bars: int = 2700) -> pd.DataFrame:
-        """Fetch BTC 1H data with multiple pages if needed"""
-        pages = (lookback_bars // 1000) + 1
-        all_data = []
-        end_time = int(datetime.now(timezone.utc).timestamp() * 1000)
-        for _ in range(pages):
-            url = f'{self.BASE_URL}/klines?symbol=BTCUSDT&interval=1h&limit=1000&endTime={end_time}'
-            data = self._fetch(url)
-            if not data: break
-            all_data.extend(data)
-            end_time = int(data[0][0]) - 1
-        df = pd.DataFrame(all_data, columns=['timestamp','open','high','low','close','volume',
-                                              'close_time','quote_vol','trades','taker_buy_base',
-                                              'taker_buy_quote','ignore'])
-        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-        df = df.drop_duplicates('timestamp').set_index('timestamp').sort_index()
-        for col in ['open','high','low','close','volume']:
-            df[col] = df[col].astype(float)
-        df['return'] = df['close'].pct_change()
-        return df.dropna(subset=['return'])
 
-    def fetch_asset_8h(self, symbol: str, lookback_bars: int = 800) -> pd.DataFrame:
-        """Fetch 8H klines for an asset"""
-        pages = (lookback_bars // 1000) + 1
-        all_data = []
-        end_time = int(datetime.now(timezone.utc).timestamp() * 1000)
-        for _ in range(pages):
-            url = f'{self.BASE_URL}/klines?symbol={symbol}USDT&interval=8h&limit=1000&endTime={end_time}'
-            data = self._fetch(url)
-            if not data: break
-            all_data.extend(data)
-            end_time = int(data[0][0]) - 1
-        df = pd.DataFrame(all_data, columns=['timestamp','open','high','low','close','volume',
-                                              'close_time','quote_vol','trades','taker_buy_base',
-                                              'taker_buy_quote','ignore'])
-        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-        df = df.drop_duplicates('timestamp').set_index('timestamp').sort_index()
-        for col in ['close']:
-            df[col] = df[col].astype(float)
-        df['return'] = df['close'].pct_change()
-        return df.dropna(subset=['return'])
-
-
-# ─── State Management ───
+# ─── State ───
 @dataclass
 class BotState:
-    """Persistent state across restarts"""
     equity: float = 1.0
     peak_equity: float = 1.0
-    regime_m1: int = 0
-    regime_ch: int = 0
-    last_bp: float = 1.0
     ls_long_asset: str = ''
     ls_short_asset: str = ''
     last_update: str = ''
-    trade_log: list = field(default_factory=list)
     position_log: list = field(default_factory=list)
 
     def save(self, path: str):
@@ -189,295 +91,195 @@ class BotState:
         return BotState()
 
 
-# ─── Signal Engine ───
-class RACMSignalEngine:
-    """Compute all signals from data"""
-
-    def __init__(self, config: RACMConfig):
-        self.config = config
-
-    def compute_regime(self, price: np.ndarray, ret: np.ndarray, state: BotState) -> tuple:
-        """Compute regime position multiplier (bp_h) for current bar"""
-        n = len(price)
-        if n < self.config.regime_ma_days * 24 + 120:
-            return 1.0, state.regime_m1, state.regime_ch
-
-        ma_long_window = self.config.regime_ma_days * 24
-        ma_short_window = self.config.regime_ma_short_days * 24
-
-        ma_long = np.mean(price[max(0, n-ma_long_window):n-1])
-        ma_short = np.mean(price[max(0, n-ma_short_window):n-1])
-        skew_val = pd.Series(ret[max(0, n-720):n-1]).skew() if n > 720 else 0
-        peak = np.max(price[max(0, n-1080):n-1])
-        dd = (price[-2] - peak) / peak if peak > 0 else 0
-        rv = np.std(ret[max(0, n-720):n-1]) * np.sqrt(365*24) if n > 720 else 1.0
-
-        # MA slope (5 days)
-        if n > ma_long_window + 120:
-            ma_l_now = np.mean(price[max(0,n-ma_long_window):n-1])
-            ma_l_old = np.mean(price[max(0,n-ma_long_window-120):n-121])
-            ma_slope = (ma_l_now - ma_l_old) / ma_l_old if ma_l_old > 0 else 0
-        else:
-            ma_slope = 0
-
-        c_sum = np.sum(ret[max(0, n-720):n-1])
-
-        # Danger composite
-        dl = 0; ds = 0
-        if price[-2] < ma_long: dl += 1
-        if price[-2] < ma_short: ds += 1
-        if not np.isnan(skew_val) and skew_val < self.config.regime_skew_threshold: dl += 1; ds += 1
-        if dd < self.config.regime_dd_threshold: dl += 1; ds += 1
-        dc = dl * 0.3 + ds * 0.7
-
-        m1 = state.regime_m1
-        ch = state.regime_ch
-        if n >= 3 and ret[-3] < -0.006: m1 = 4
-        if m1 > 0: m1 -= 1
-
-        bp = 1.0
-        if dc >= 1.5:
-            if ma_slope < -0.001 and ret[-2] < 0: bp = -0.7
-            elif ma_slope > 0.0005: bp = 0.5
-            else: bp = 0.2
-        elif dc >= 0.8: bp = 0.5; ch = 120
-        elif dc >= 0.5: bp = 0.7; ch = 120
-        else:
-            if ch > 0:
-                ch -= 1
-                bp = 0.7 if not (c_sum > 0.05) else 1.0
-            elif rv < 0.50 and n >= 240 and np.sum(ret[-240:-1]) > 0:
-                bp = 1.5
-            else: bp = 1.0
-        if m1 > 0: bp = min(bp, 0.7)
-
-        return bp, m1, ch
-
-    def compute_ls_ranking(self, asset_8h_data: dict) -> tuple:
-        """Compute LS momentum ranking from 8H data"""
-        config = self.config
-        rankings = {}
-        for lb_days in config.ls_lookbacks_days:
-            lb = lb_days * 3  # 8H bars per day = 3
-            scores = {}
-            for name, df in asset_8h_data.items():
-                if len(df) < lb + 10: continue
-                ret = df['return'].values
-                mom = np.sum(ret[-lb-1:-1])
-                vol = np.mean(np.abs(ret[-30-1:-1])) + 1e-10
-                scores[name] = mom / vol
-            if len(scores) >= 3:
-                sorted_assets = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-                rankings[lb_days] = (sorted_assets[0][0], sorted_assets[-1][0])
-
-        if not rankings:
-            return '', ''
-        # Use first lookback's ranking
-        long_asset = list(rankings.values())[0][0]
-        short_asset = list(rankings.values())[0][1]
-        return long_asset, short_asset
-
-    def compute_crypto_gates(self, funding_z: float, oi_zscore: float,
-                             liq_zscore: float, rv_pctrank: float,
-                             bp: float, atr_pct: float, ret_30d: float,
-                             ma_cross_slow: float) -> tuple:
-        """Compute crypto quality gates and alpha signal"""
-        config = self.config
-
-        # Crypto alpha
-        cs = 0
-        if funding_z < -2.0: cs += 0.5
-        elif funding_z < config.funding_z_long: cs += 0.3
-        if oi_zscore < config.oi_z_threshold and ret_30d < -0.02: cs += 0.3
-        if funding_z > config.funding_z_short: cs -= 0.3
-        if liq_zscore > config.liq_z_threshold: cs -= 0.3
-        cs = np.clip(cs, -1, 1)
-
-        # Gate multiplier
-        n_danger = int(rv_pctrank > 0.95) + int(liq_zscore > config.liq_z_threshold) + int(bp < 0.3)
-        grind = (atr_pct < config.grind_atr_threshold and ret_30d < -0.05
-                 and ma_cross_slow < 0 and rv_pctrank < 0.50)
-        gate = 1.0
-        if n_danger >= config.crash_danger_count: gate = 0.1
-        elif grind: gate = 0.5
-        elif rv_pctrank > 0.50 and atr_pct > 0: gate = 0.85  # vol hedge
-
-        return cs, gate
-
-    def compute_kelly(self, past_returns: np.ndarray) -> tuple:
-        """Compute Kelly leverage and vol target"""
-        config = self.config
-        if len(past_returns) < 240:
-            return 1.5, config.vol_target_base
-
-        mu = np.mean(past_returns)
-        var = np.var(past_returns) + 1e-10
-        lev = np.clip(mu / var * config.kelly_fraction, 1.0, config.position_cap)
-
-        vol_p = np.std(past_returns) * np.sqrt(365 * 24)
-        if vol_p > 0:
-            vt = np.clip(config.vol_target_base / vol_p, 0.5, config.position_cap / lev)
-        else:
-            vt = 1.0
-
-        return lev, vt
-
-
-# ─── Main Bot ───
+# ─── Bot ───
 class RACMBot:
-    def __init__(self, config: RACMConfig):
-        self.config = config
-        self.pipeline = BinanceDataPipeline(config)
-        self.engine = RACMSignalEngine(config)
-        self.state_path = os.path.join(config.state_dir, 'racm_state.pkl')
+    def __init__(self, params: RACMParams = None, state_dir='data/bot_state',
+                 log_dir='logs/racm_bot'):
+        self.params = params or RACMParams()
+        self.pipeline = BinanceDataPipeline()
+        self.state_path = os.path.join(state_dir, 'racm_state.pkl')
         self.state = BotState.load(self.state_path)
 
-        # Setup logging
-        Path(config.log_dir).mkdir(parents=True, exist_ok=True)
+        Path(log_dir).mkdir(parents=True, exist_ok=True)
         logging.basicConfig(
             level=logging.INFO,
             format='%(asctime)s [%(levelname)s] %(message)s',
             handlers=[
-                logging.FileHandler(os.path.join(config.log_dir, 'racm_bot.log'), encoding='utf-8'),
+                logging.FileHandler(os.path.join(log_dir, 'racm_bot.log'), encoding='utf-8'),
                 logging.StreamHandler(sys.stdout)
-            ]
-        )
-        self.logger = logging.getLogger('RACM')
+            ])
+        self.log = logging.getLogger('RACM')
 
     def run_once(self):
-        """Run one iteration of the bot (called every hour)"""
         now = datetime.now(timezone.utc)
-        self.logger.info(f"=== RACM tick @ {now.strftime('%Y-%m-%d %H:%M')} UTC ===")
+        self.log.info(f"=== RACM tick @ {now.strftime('%Y-%m-%d %H:%M')} UTC ===")
+        p = self.params
 
         try:
-            # 1. Fetch data
-            self.logger.info("Fetching BTC 1H data...")
-            btc_1h = self.pipeline.fetch_all_1h(lookback_bars=2700)
+            # ── 1. Fetch BTC 1H (need ~2760 bars for warmup) ──
+            btc_1h = self.pipeline.fetch_klines('BTC', '1h', pages=3)
             price = btc_1h['close'].values
             ret = btc_1h['return'].values
+            nn = len(ret)
+            log_p = np.log(np.clip(price, 1e-12, None))
+            self.log.info(f"BTC 1H: {nn} bars")
 
-            # 2. Regime detection
-            bp, m1, ch = self.engine.compute_regime(price, ret, self.state)
-            self.state.regime_m1 = m1
-            self.state.regime_ch = ch
-            self.state.last_bp = bp
-            self.logger.info(f"Regime: bp={bp:.1f}")
+            # ── 2. Fetch derivatives ──
+            try:
+                fr_df = self.pipeline.fetch_funding_rate(limit=500)
+                # Build 1H funding array aligned to btc_1h index
+                funding_raw = fr_df['fundingRate'].reindex(btc_1h.index, method='ffill').fillna(0).values
+            except:
+                funding_raw = np.zeros(nn)
 
-            # 3. LS ranking (every 8H)
-            is_ls_time = now.hour % self.config.ls_rebalance_hours == 0
+            # OI: current only (historical needs different endpoint)
+            oi_arr = np.full(nn, np.nan)
+            try:
+                oi_now = self.pipeline.fetch_open_interest_hist()
+                oi_arr[-1] = oi_now
+            except: pass
+
+            liq_arr = np.zeros(nn)  # TODO: WebSocket collector
+
+            # ── 3. Compute features (using racm_core) ──
+            funding_z = RACMFeatures.funding_zscore(funding_raw)
+            oi_z = RACMFeatures.oi_zscore(oi_arr)
+            oi_chg = RACMFeatures.oi_change_24h(oi_arr)
+            liq_z = RACMFeatures.liq_zscore(liq_arr)
+            vr = RACMFeatures.vol_ratio(ret)
+            rv_pct = RACMFeatures.rv_pctrank(ret)
+            vp = RACMFeatures.portfolio_vol(ret)
+            ret_1d = RACMFeatures.ret_nd(log_p, 24)
+            ret_30d = RACMFeatures.ret_nd(log_p, 720)
+            atr_pct = RACMFeatures.atr_pct(ret, price)
+            ma_cs = RACMFeatures.ma_cross_slow(price)
+            fra = np.roll(funding_raw, 1)
+
+            # ── 4. Regime ──
+            bp_arr = RACMRegime.compute(price, ret, p)
+            bp = bp_arr[-1] if nn > p.warmup_hours else 1.0
+            self.log.info(f"Regime: bp={bp:.1f}")
+
+            # ── 5. LS ranking (every 8H) ──
+            is_ls_time = now.hour % 8 == 0
             if is_ls_time:
-                self.logger.info("LS rebalance check...")
-                asset_data = {}
-                for asset in self.config.assets:
+                self.log.info("LS rebalance check...")
+                asset_8h = {}
+                for asset in p.assets:
                     try:
-                        df = self.pipeline.fetch_asset_8h(asset, lookback_bars=300)
-                        asset_data[asset] = df
+                        df = self.pipeline.fetch_klines(asset, '8h', pages=1)
+                        asset_8h[asset] = df['return'].values
                     except Exception as e:
-                        self.logger.warning(f"Failed to fetch {asset}: {e}")
-                if len(asset_data) >= 3:
-                    new_long, new_short = self.engine.compute_ls_ranking(asset_data)
+                        self.log.warning(f"Failed {asset}: {e}")
+
+                if len(asset_8h) >= 3:
+                    new_long, new_short = RACMLS.compute_ranking(
+                        asset_8h, list(asset_8h.keys()), p.ls_lookbacks, bar_multiplier=3)
                     if new_long != self.state.ls_long_asset or new_short != self.state.ls_short_asset:
-                        old = f"{self.state.ls_long_asset}/{self.state.ls_short_asset}"
-                        self.logger.info(f"LS CHANGE: {old} -> {new_long}/{new_short}")
+                        self.log.info(f"LS CHANGE: {self.state.ls_long_asset}/{self.state.ls_short_asset} -> {new_long}/{new_short}")
                         self.state.ls_long_asset = new_long
                         self.state.ls_short_asset = new_short
                     else:
-                        self.logger.info(f"LS unchanged: long={new_long} short={new_short}")
+                        self.log.info(f"LS unchanged: long={new_long} short={new_short}")
 
-            # 4. Crypto quality gates
-            # Simplified: use funding rate from API
-            try:
-                fr_df = self.pipeline.fetch_funding_rate(limit=200)
-                fr_vals = fr_df['fundingRate'].values
-                fr_mean = np.mean(fr_vals[-168:]) if len(fr_vals) >= 168 else np.mean(fr_vals)
-                fr_std = np.std(fr_vals[-168:]) if len(fr_vals) >= 168 else np.std(fr_vals)
-                funding_z = (fr_vals[-1] - fr_mean) / (fr_std + 1e-10) if len(fr_vals) > 0 else 0
-            except:
-                funding_z = 0
+            # ── 6. Crypto gates (using racm_core) ──
+            i = nn - 1
+            cs, gate = RACMCryptoGates.compute(
+                safe_val(funding_z, i), safe_val(oi_z, i), safe_val(oi_chg, i),
+                safe_val(liq_z, i), safe_val(rv_pct, i, 0.5), bp,
+                safe_val(atr_pct, i, 0.01), safe_val(ret_30d, i),
+                safe_val(ma_cs, i), safe_val(vr, i, 1.0), safe_val(ret_1d, i), p)
 
-            # Simplified features for gates
-            rv_pctrank = 0.5  # TODO: compute from data
-            atr_pct = np.mean(np.abs(ret[-24:])) / (price[-1] + 1e-12) if len(ret) >= 24 else 0.01
-            ret_30d = np.sum(ret[-720:]) if len(ret) >= 720 else 0
-            ma_cross_slow = 0  # TODO: compute
+            # ── 7. Kelly (using racm_core, on portfolio returns) ──
+            dw = max(0, 1 - p.ls_weight)
+            # Build base_raw for Kelly (last 90 days)
+            base_raw_window = []
+            for j in range(max(0, nn - p.kelly_lookback_hours), nn):
+                base_raw_window.append(dw * ret[j] * bp_arr[j] + p.ls_weight * 0)  # LS not available bar-by-bar
+            lev, vt = RACMKelly.compute(np.array(base_raw_window), p)
+            total_lev = min(lev * vt, p.position_cap)
 
-            cs, gate = self.engine.compute_crypto_gates(
-                funding_z, 0, 0, rv_pctrank, bp, atr_pct, ret_30d, ma_cross_slow)
+            # ── 8. DD control (using racm_core) ──
+            dd_mult = RACMDDControl.compute(self.state.equity, self.state.peak_equity, p)
 
-            # 5. Kelly sizing
-            n = len(ret)
-            kelly_lb = self.config.kelly_lookback_days * 24
-            base_raw = ret[max(0, n-kelly_lb):n]  # simplified
-            lev, vt = self.engine.compute_kelly(base_raw)
-            total_lev = min(lev * vt, self.config.position_cap)
+            # ── 9. Positions ──
+            position_btc = dw * bp * gate * total_lev * dd_mult
+            position_ls = p.ls_weight * gate * total_lev * dd_mult
 
-            # 6. DD control
-            dd_eq = (self.state.equity - self.state.peak_equity) / self.state.peak_equity
-            dd_mult = 1.0
-            if dd_eq < self.config.dd_level3: dd_mult = self.config.dd_mult3
-            elif dd_eq < self.config.dd_level2: dd_mult = self.config.dd_mult2
-            elif dd_eq < self.config.dd_level1: dd_mult = self.config.dd_mult1
+            self.log.info(f"Signals: gate={gate:.2f} lev={total_lev:.2f} dd_mult={dd_mult:.2f} cs={cs:.2f}")
+            self.log.info(f"Position: BTC={position_btc:.2f}x LS={position_ls:.2f}x (long={self.state.ls_long_asset} short={self.state.ls_short_asset})")
 
-            # 7. Final position
-            final_position = gate * total_lev * dd_mult
-            dw = max(0, 1 - self.config.ls_weight)
-            position_btc = dw * bp * final_position
-            position_ls = self.config.ls_weight * final_position
+            # ── 10. Paper P&L ──
+            btc_ret = ret[-1]
 
-            # 8. Log
-            self.logger.info(f"Position: regime_bp={bp:.2f} gate={gate:.2f} lev={total_lev:.2f} dd_mult={dd_mult:.2f}")
-            self.logger.info(f"Final: BTC={position_btc:.2f}x LS={position_ls:.2f}x (long={self.state.ls_long_asset} short={self.state.ls_short_asset})")
-            self.logger.info(f"Equity: {self.state.equity:.4f} (peak={self.state.peak_equity:.4f} dd={dd_eq:.2%})")
-            self.logger.info(f"Crypto: funding_z={funding_z:.2f} cs={cs:.2f}")
+            # LS P&L: fetch actual 1H return for long/short assets
+            ls_pnl = 0.0
+            na = len(p.assets)
+            if self.state.ls_long_asset and self.state.ls_short_asset:
+                for ls_asset, ls_sign in [(self.state.ls_long_asset, 1), (self.state.ls_short_asset, -1)]:
+                    try:
+                        if ls_asset == 'BTC':
+                            a_ret = btc_ret
+                        else:
+                            ls_df = self.pipeline.fetch_klines(ls_asset, '1h', limit=2, pages=1)
+                            a_ret = ls_df['return'].values[-1] if len(ls_df) >= 1 else 0
+                        ls_pnl += ls_sign * a_ret / na
+                    except:
+                        pass
 
-            # 9. Paper trade P&L (using last 1H return)
-            pnl = ret[-1] * position_btc  # simplified
+            pnl_base = dw * bp * btc_ret + p.ls_weight * ls_pnl
+            pnl_crypto = cs * btc_ret * p.crypto_alpha_weight
+            pnl = (pnl_base + pnl_crypto) * gate * total_lev * dd_mult
+
+            # Carry (raw funding rate, not z-score)
+            pnl += fra[-1] * abs(gate * total_lev * dd_mult)
+
+            # Slippage (simplified: avg 5bps per LS change, amortized)
+            pnl -= 0.0005 * abs(total_lev) / 24  # ~5bps/day
+
             self.state.equity *= (1 + pnl)
             self.state.peak_equity = max(self.state.peak_equity, self.state.equity)
+            dd_pct = (self.state.equity / self.state.peak_equity - 1) * 100
 
-            # 10. Record
-            record = {
-                'timestamp': now.isoformat(),
-                'bp': bp, 'gate': gate, 'lev': total_lev, 'dd_mult': dd_mult,
+            self.log.info(f"P&L: base={pnl_base:+.4%} LS={ls_pnl:+.4%} crypto={pnl_crypto:+.4%} -> total={pnl:+.4%}")
+            self.log.info(f"Equity: {self.state.equity:.4f} (dd={dd_pct:+.1f}%)")
+
+            # ── 11. Record + Save ──
+            self.state.position_log.append({
+                'timestamp': now.isoformat(), 'bp': bp, 'gate': gate,
+                'lev': total_lev, 'dd_mult': dd_mult, 'cs': cs,
                 'position_btc': position_btc, 'position_ls': position_ls,
                 'ls_long': self.state.ls_long_asset, 'ls_short': self.state.ls_short_asset,
-                'funding_z': funding_z, 'pnl': pnl,
-                'equity': self.state.equity, 'dd': dd_eq,
-            }
-            self.state.position_log.append(record)
+                'pnl_base': pnl_base, 'ls_pnl': ls_pnl, 'pnl_crypto': pnl_crypto,
+                'pnl': pnl, 'btc_ret': btc_ret, 'funding_z': safe_val(funding_z, i),
+                'rv_pctrank': safe_val(rv_pct, i, 0.5), 'equity': self.state.equity,
+            })
             self.state.last_update = now.isoformat()
-
-            # 11. Save state
             self.state.save(self.state_path)
-            self.logger.info(f"State saved. P&L this bar: {pnl:+.4%}")
 
         except Exception as e:
-            self.logger.error(f"ERROR: {e}", exc_info=True)
+            self.log.error(f"ERROR: {e}", exc_info=True)
 
-    def run_loop(self, interval_seconds: int = 3600):
-        """Run continuously (every hour)"""
-        self.logger.info("RACM Bot starting continuous loop...")
+    def run_loop(self, interval: int = 3600):
+        self.log.info("RACM Bot starting...")
         while True:
             self.run_once()
-            self.logger.info(f"Sleeping {interval_seconds}s until next tick...")
-            time.sleep(interval_seconds)
+            self.log.info(f"Next tick in {interval}s")
+            time.sleep(interval)
 
 
 def main():
-    parser = argparse.ArgumentParser(description='RACM Production Bot')
+    parser = argparse.ArgumentParser()
     parser.add_argument('--mode', default='paper', choices=['paper', 'live'])
-    parser.add_argument('--once', action='store_true', help='Run once and exit')
+    parser.add_argument('--once', action='store_true')
+    parser.add_argument('--interval', type=int, default=3600)
     parser.add_argument('--initial-capital', type=float, default=1.0)
-    parser.add_argument('--interval', type=int, default=3600, help='Seconds between ticks')
     args = parser.parse_args()
 
-    config = RACMConfig()
-    bot = RACMBot(config)
-
+    bot = RACMBot()
     if args.initial_capital != 1.0 and bot.state.equity == 1.0:
         bot.state.equity = args.initial_capital
         bot.state.peak_equity = args.initial_capital
-        bot.logger.info(f"Initial capital set to {args.initial_capital}")
 
     if args.once:
         bot.run_once()
