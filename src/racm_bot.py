@@ -150,6 +150,65 @@ class RACMBot:
                 logging.StreamHandler(sys.stdout)])
         self.log = logging.getLogger('RACM')
 
+        # Auto-warmup Kelly on first startup
+        self.warmup_kelly()
+
+    def warmup_kelly(self):
+        """Pre-fill Kelly buffer with historical base_raw from API data.
+        Called once on first startup when kelly_buf is empty.
+        """
+        if len(self.state.base_raw_history) >= 240:
+            self.log.info(f"Kelly already warm: {len(self.state.base_raw_history)} bars")
+            return
+
+        self.log.info("Warming up Kelly buffer from historical data...")
+        p = self.params
+        try:
+            # Fetch BTC 1H (3 pages = ~3000 bars = ~4 months)
+            btc_1h = self.pipeline.fetch_klines('BTC', '1h', pages=3)
+            price = btc_1h['close'].values
+            ret_arr = btc_1h['return'].values
+            nn = len(ret_arr)
+
+            # Regime on full history
+            bp_arr = RACMRegime.compute(price, ret_arr, p)
+
+            # Fetch 8H for LS
+            asset_8h = {}
+            for asset in p.assets:
+                try:
+                    df = self.pipeline.fetch_klines(asset, '8h', pages=1)
+                    asset_8h[asset] = df
+                except:
+                    pass
+
+            # Compute LS at 8H
+            if len(asset_8h) >= 3:
+                c_8h = list(asset_8h.values())[0].index
+                for df in asset_8h.values():
+                    c_8h = c_8h.intersection(df.index)
+                a_ret = {a: asset_8h[a].loc[c_8h, 'return'].values for a in asset_8h}
+                lp_8h, _, _ = RACMLS.compute_pnl_8h(a_ret, p.ls_lookbacks, len(c_8h))
+                # Map to 1H
+                lp_1h = RACMLS.map_8h_to_1h(lp_8h, c_8h, btc_1h.index, nn)
+            else:
+                lp_1h = np.zeros(nn)
+
+            # Build base_raw history
+            dw = max(0, 1 - p.ls_weight)
+            S = min(p.warmup_hours, nn - 1)
+            count = 0
+            for i in range(max(S, nn - p.kelly_lookback_hours), nn):
+                base_val = dw * ret_arr[i] * bp_arr[i] + p.ls_weight * lp_1h[i]
+                self.state.append_base_raw(base_val)
+                count += 1
+
+            self.log.info(f"Kelly warmup complete: {count} bars loaded (total buf={len(self.state.base_raw_history)})")
+            self.state.save(self.state_path)
+
+        except Exception as e:
+            self.log.warning(f"Kelly warmup failed: {e}. Will accumulate naturally.")
+
     def _compute_regime_incremental(self, price: np.ndarray, ret: np.ndarray) -> float:
         """FIX 1: Compute regime for current bar using persisted m1/ch state.
         Uses the same logic as RACMRegime.compute but only for the LAST bar,
