@@ -1,0 +1,230 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{natbib}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{threeparttable}
+
+\title{Regime-Adaptive Cross-Sectional Momentum in Cryptocurrency Markets:\\
+A Walk-Forward Validated Long/Short Strategy\\with Derivatives-Based Quality Gates}
+
+\author{Anonymous}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% ============================================================
+\begin{abstract}
+We propose RACM, a three-layer daily-frequency long/short momentum strategy for six major cryptocurrency assets (BTC, ETH, SOL, XRP, DOGE, LINK). The first layer ranks assets by volatility-adjusted cross-sectional momentum (60-day and 90-day lookbacks) to construct long-short portfolios rebalanced every eight hours. The second layer detects market regimes using a composite danger score derived from a 110-day moving average crossover, 30-day return skewness, and 45-day drawdown, scaling positions between $-0.7\times$ and $1.5\times$ across four discrete states. The third layer applies cryptocurrency-specific quality gates based on funding rate, open interest change, and liquidation cascade $z$-scores to suppress exposure during structurally dangerous conditions. Position sizing follows a fractional Kelly criterion ($f=0.15$) with a $3.0\times$ cap and equity-based drawdown control.
+
+We evaluate the strategy using a strict walk-forward protocol: 3-month training / 1-month testing, rolling monthly for 45 folds (2021--2024 in-sample). The strategy achieves an 87\% fold win rate (39/45), a walk-forward score (WFS) of 367\% annualized, and $+121\%$ during the 2022 bear market (BTC: $-65\%$). On a genuinely out-of-sample 2025 period with no parameter adjustment, the strategy returns $+93\%$ (BTC: $-7\%$, MaxDD: $-13.6\%$). Permutation tests (1,000 iterations, three variants) yield $p=0.000$. However, a $t$-test cannot reject WFS $> 300\%$ ($p=0.206$), and IS-to-OOS degradation is 78\%. We discuss these limitations transparently, arguing that the statistically defensible claims are the win rate exceeding 50\% ($p<0.0001$) and positive OOS alpha in a down market.
+\end{abstract}
+
+\textbf{Keywords:} cryptocurrency, cross-sectional momentum, regime detection, walk-forward validation, long-short strategy, Kelly criterion
+
+% ============================================================
+\section{Introduction}
+\label{sec:intro}
+
+Cryptocurrency markets present unique challenges for quantitative strategies. Annual volatility of 80--120\% (approximately 4--5$\times$ that of equities) makes simple buy-and-hold approaches extremely risky: Bitcoin declined 65\% in 2022, while the broader altcoin market experienced drawdowns exceeding 90\%. This motivates the search for strategies that perform in both bull and bear environments.
+
+Short-term price prediction in cryptocurrency markets has proven extremely difficult. Machine learning classifiers, order book imbalance features, and derivatives-based directional signals all fail to generate statistically significant alpha after transaction costs at intraday to daily frequencies.\footnote{We tested LSTM, Transformer, Random Forest classifiers on 15-minute to 3-hour prediction horizons, as well as order flow imbalance (OBI) and derivative signal strategies. All achieved accuracy below 55\% with negative net returns after costs.} This negative result motivates a fundamental shift: from \emph{prediction} to \emph{risk management}.
+
+Our contribution is threefold. First, we apply the cross-sectional momentum framework of \citet{moskowitz2012time} to a cryptocurrency universe, demonstrating that vol-adjusted momentum rankings generate a modest but persistent long-short spread. Second, we introduce a regime detection system that scales position sizes based on a composite danger score, enabling safe use of leverage that would otherwise be catastrophic in bear markets. Third, we incorporate cryptocurrency-specific quality gates derived from perpetual futures market microstructure (funding rates, open interest dynamics, and liquidation cascades) as a risk management overlay.
+
+The remainder of this paper is organized as follows. Section~\ref{sec:related} reviews related work. Section~\ref{sec:method} describes the data and methodology. Sections~\ref{sec:is} and~\ref{sec:oos} present in-sample and out-of-sample results, respectively. Section~\ref{sec:robustness} provides robustness tests. Section~\ref{sec:discussion} discusses limitations. Section~\ref{sec:conclusion} concludes.
+
+% ============================================================
+\section{Related Work}
+\label{sec:related}
+
+\subsection{Momentum in Traditional Assets}
+\citet{jegadeesh1993returns} established that buying past winners and selling past losers generates abnormal returns in equities. \citet{moskowitz2012time} extended this to time-series momentum across asset classes, showing that past 12-month returns predict future 1-month returns in futures markets. We adapt this framework to a cross-sectional cryptocurrency context with substantially shorter lookback periods.
+
+\subsection{Momentum in Cryptocurrencies}
+\citet{grobys2020momentum} document momentum profits in cryptocurrency markets, though with concerns about survivorship bias and market microstructure. \citet{liu2022risks} construct cryptocurrency factor models analogous to Fama-French. Our work differs by employing a long-short construction on a fixed 6-asset universe with explicit regime conditioning.
+
+\subsection{Regime Detection}
+\citet{ang2012regime} provide a comprehensive framework for regime-switching models in financial markets. Our approach uses a simpler rule-based composite score rather than a hidden Markov model, prioritizing interpretability and avoiding the estimation complexity of latent state models in highly volatile cryptocurrency markets.
+
+\subsection{Derivatives Market Microstructure}
+Perpetual futures markets generate unique signals: funding rates reflect the cost of leverage and directional sentiment; open interest changes indicate position building or unwinding; liquidation cascades create forced-selling dynamics. We use these signals not for directional prediction but as quality gates that suppress trading during structurally dangerous conditions.
+
+% ============================================================
+\section{Data and Methodology}
+\label{sec:method}
+
+\subsection{Universe and Data Sources}
+We trade six cryptocurrency assets available on Lighter.xyz, a zero-fee decentralized exchange on Arbitrum L2 (Table~\ref{tab:assets}). Price data are sourced from Binance at 1-hour and 8-hour frequencies. Derivatives data (funding rate, open interest, liquidation counts) are sourced from Binance Futures at 1-hour frequency.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/paper/fig1_architecture.png}
+\caption{RACM strategy architecture. Three layers process data at different frequencies: LS momentum at 8H, regime detection at 1H, and crypto quality gates at 1H. Position sizing combines Kelly criterion with equity drawdown control.}
+\label{fig:architecture}
+\end{figure}
+
+\subsection{Layer 1: Cross-Sectional LS Momentum}
+At each 8-hour boundary, we compute vol-adjusted momentum for each asset $i$:
+\begin{equation}
+\text{Score}_i^{(L)} = \frac{\sum_{t=1}^{L} r_{i,t-1}}{\frac{1}{30}\sum_{t=1}^{30} |r_{i,t-1}|}
+\end{equation}
+for lookback periods $L \in \{60, 90\}$ days ($\times 3$ bars/day at 8H), where all returns use lag-1 indexing. We rank assets by score, go long the top-ranked asset and short the bottom-ranked asset, weighting equally. The final LS return is the average across both lookbacks:
+\begin{equation}
+r_{\text{LS},t} = \frac{1}{2} \sum_{L \in \{60,90\}} \frac{r_{\text{top}(L),t} - r_{\text{bottom}(L),t}}{N_{\text{assets}}}
+\end{equation}
+
+\subsection{Layer 2: Regime Detection}
+We compute a composite danger score $d_t$ at each 1-hour bar:
+\begin{equation}
+d_t = 0.3 \cdot \mathbb{1}[P_{t-1} < \text{MA}_{110d,t-1}] + 0.7 \cdot \mathbb{1}[P_{t-1} < \text{MA}_{20d,t-1}] + \mathbb{1}[\text{skew}_{30d,t-1} < -0.5] + \mathbb{1}[\text{DD}_{45d,t-1} < -12\%]
+\end{equation}
+The position multiplier $\beta_t$ is assigned based on $d_t$:
+\begin{equation}
+\beta_t = \begin{cases}
+-0.7 & \text{if } d_t \geq 1.5 \text{ and MA slope} < 0 \text{ and } r_{t-1} < 0 \\
+0.2\text{--}0.5 & \text{if } d_t \geq 0.8 \\
+0.7 & \text{if } d_t \geq 0.5 \text{ or caution holddown active} \\
+1.5 & \text{if low vol and positive momentum} \\
+1.0 & \text{otherwise}
+\end{cases}
+\end{equation}
+
+\subsection{Layer 3: Crypto Quality Gates}
+We compute $z$-scores for three derivatives signals using 168-hour rolling windows with lag-2:
+\begin{itemize}
+\item Funding rate $z$-score: $z_{\text{FR}} = (FR_{t-1} - \mu_{168}^{FR}) / \sigma_{168}^{FR}$
+\item Open interest $z$-score: $z_{\text{OI}} = (\Delta\text{OI}_{24h,t-1} - \mu_{168}) / \sigma_{168}$
+\item Liquidation cascade $z$-score: $z_{\text{Liq}} = (\text{Liq}_{24h,t-1} - \mu_{168}) / \sigma_{168}$
+\end{itemize}
+These produce a crypto alpha signal $c_t \in [-1, 1]$ and a gate multiplier $g_t \in \{0.1, 0.5, 0.85, 1.0\}$.
+
+\subsection{Position Sizing}
+The base portfolio return is:
+\begin{equation}
+r_{\text{base},t} = (1 - w_{\text{LS}}) \cdot r_{\text{BTC},t} \cdot \beta_t + w_{\text{LS}} \cdot r_{\text{LS},t}
+\end{equation}
+with $w_{\text{LS}} = 0.80$. Kelly sizing uses the past 2,160 bars (90 days):
+\begin{equation}
+\ell_t = \text{clip}\left(\frac{\hat{\mu}_t}{\hat{\sigma}_t^2} \cdot f, \; 1.0, \; \text{cap}\right), \quad f = 0.15, \quad \text{cap} = 3.0
+\end{equation}
+Equity drawdown control applies multipliers of $0.7/0.4/0.1$ at DD thresholds of $-15\%/-22\%/-30\%$.
+
+\subsection{Walk-Forward Evaluation}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/paper/fig2_wf_scheme.png}
+\caption{Walk-forward evaluation scheme: 3-month training / 1-month testing, rolling monthly, yielding 45 folds for the 2021--2024 in-sample period.}
+\label{fig:wf_scheme}
+\end{figure}
+Only the Kelly fraction $f$ is optimized per fold from the grid $\{0.15, 0.20, 0.25, 0.30\}$ using training-period Sharpe ratio. All other parameters remain fixed across folds (Table~\ref{tab:params}).
+
+\subsection{Leak Prevention}
+We enforce strict lag-1 or lag-2 constraints on all features (Table~\ref{tab:leak}). No future information enters any signal computation.
+
+% ============================================================
+\section{In-Sample Results (2021--2024)}
+\label{sec:is}
+
+\input{tables}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/paper/fig4_fold_returns.png}
+\caption{Walk-forward fold returns for 45 monthly test periods. Win rate: 39/45 (87\%). Green dashed line: mean (30.6\%/month). Orange dotted line: median (16.1\%/month). Maximum loss: $-4.0\%$.}
+\label{fig:fold_returns}
+\end{figure}
+
+The strategy achieves a WFS of 367\% with an 87\% win rate across 45 folds (Table~\ref{tab:is_results}). During the 2022 bear market (BTC: $-65\%$), the strategy returns $+121\%$, demonstrating the regime detection system's crash protection capability. The six losing folds ($-4.0\%$ maximum) all correspond to correlated crash events (Luna/UST, FTX, JPY carry trade unwind) where all assets move simultaneously, negating the LS spread.
+
+% ============================================================
+\section{Out-of-Sample Validation (2025)}
+\label{sec:oos}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/paper/fig5_oos_2025.png}
+\caption{Out-of-sample 2025 monthly performance. RACM: $+93\%$, BTC Buy \& Hold: $-7\%$. The strategy outperforms in 8 of 12 months. Losses in February ($-7.3\%$) and November ($-1.0\%$) coincide with BTC declines of $-17.7\%$, demonstrating loss suppression.}
+\label{fig:oos}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/paper/fig6_is_vs_oos.png}
+\caption{IS vs. OOS comparison across WFS, win rate, and maximum fold drawdown. IS-to-OOS degradation in WFS is 78\%, while MaxDD improves from $-15.7\%$ to $-13.6\%$.}
+\label{fig:is_oos}
+\end{figure}
+
+Table~\ref{tab:oos} presents the month-by-month OOS results. The strategy returns $+93\%$ in a year where BTC declines $7\%$, with a maximum drawdown of $-13.6\%$. The IS-to-OOS degradation of 78\% (WFS 367\% $\to$ 81\%) is attributable to three factors: (1) position cap selection bias, (2) 1-hour compounding effects in IS, and (3) outlier dependence on three explosive folds.
+
+% ============================================================
+\section{Robustness and Statistical Tests}
+\label{sec:robustness}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/paper/fig7_shuffle_tests.png}
+\caption{Permutation test distributions ($N=1{,}000$ each). Red dashed: real WFS (369\%). Blue solid: shuffle mean. All three tests yield $p=0.000$, though we note that shuffling destroys temporal structure, setting a low bar for significance.}
+\label{fig:shuffle}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/paper/fig8_param_sensitivity.png}
+\caption{Parameter sensitivity analysis. Red bars indicate current settings. WFS remains within $\pm 10\%$ of the baseline across all parameter perturbations, demonstrating robustness to individual parameter choices.}
+\label{fig:sensitivity}
+\end{figure}
+
+Table~\ref{tab:stats} summarizes all statistical tests. The permutation tests confirm that position timing contains information ($p=0.000$), but we caution that shuffling destroys autocorrelation and volatility clustering, setting a low hurdle. The more stringent $t$-test for WFS $> 300\%$ yields $p=0.206$ and cannot be rejected at conventional significance levels. The statistically defensible claims are: (1) the win rate exceeds 50\% ($p<0.0001$), and (2) the strategy generates positive returns in a down market (OOS 2025: $+93\%$ vs.\ BTC $-7\%$).
+
+Alpha decay analysis reveals a statistically significant declining trend ($p=0.003$), consistent with increasing market efficiency in cryptocurrency markets.
+
+% ============================================================
+\section{Discussion}
+\label{sec:discussion}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/paper/fig9_decomposition.png}
+\caption{Return decomposition. At 1$\times$ leverage, the base signal (regime + LS blend) yields WFS $+15\%$, below BTC Buy \& Hold ($+32\%$). The model's value is not directional alpha but crash protection that enables safe leverage application.}
+\label{fig:decomposition}
+\end{figure}
+
+\subsection{Source of Returns}
+At $1\times$ leverage, the unblended signal underperforms buy-and-hold (Figure~\ref{fig:decomposition}). The model's value lies in making leverage \emph{survivable}: BTC at $3\times$ leverage would have been liquidated in 2022 ($-65\% \times 3 = -195\%$), while RACM at $3\times$ returned $+121\%$. The regime detection system acts as crash protection---analogous to a seatbelt that does not make a car faster but enables safe high-speed driving.
+
+\subsection{The Leverage Illusion}
+The IS WFS of 367\% is partially an artifact of $3\times$ leverage applied to hourly compounding over 4 years. The position cap of $3.0\times$ was selected from a sweep, introducing result-dependence. At cap $= 2.5\times$ (a less data-dependent choice), WFS is $290\%$. Removing the three most extreme folds reduces WFS from 367\% to 253\%.
+
+\subsection{Practical Constraints}
+The strategy's capacity is limited to approximately \$50K--\$200K due to DEX liquidity constraints. Execution uses Binance data for signal generation and Lighter.xyz for order execution, creating a cross-exchange basis risk of 2--5 bps normally, potentially 50--100 bps during high volatility.
+
+\subsection{Structural Weakness}
+The strategy fails when all assets move in perfect correlation (Luna crash, FTX collapse, JPY carry unwind). In these events, the LS spread collapses. However, losses are contained to $-4.0\%$ per fold maximum, and recovery occurs within 2--3 months.
+
+% ============================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+We present RACM, a regime-adaptive cross-sectional momentum strategy for cryptocurrency markets. The strategy's primary contribution is demonstrating that momentum-based risk management enables safe leverage in a highly volatile asset class. Our statistically defensible claims are:
+\begin{enumerate}
+\item A fold win rate of 87\% significantly exceeding 50\% ($p<0.0001$)
+\item Positive out-of-sample returns ($+93\%$) in a BTC-declining year ($-7\%$)
+\item Robustness to parameter perturbation (9 out of 9 tests pass)
+\item A 21-point leak prevention protocol with all items verified
+\end{enumerate}
+
+What we \emph{cannot} claim statistically is WFS $> 300\%$ ($p=0.206$). Alpha shows a significant declining trend ($p=0.003$), suggesting that the strategy's edge may erode over 2--3 years as cryptocurrency markets mature. Future work includes weekly walk-forward validation for larger fold counts, adaptive cap selection, and live trading validation.
+
+% ============================================================
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

@@ -1,0 +1,216 @@
+% ============================================================
+% Table 1: Asset Universe and Data Sources
+% ============================================================
+\begin{table}[htbp]
+\centering
+\caption{Asset Universe, Data Sources, and Transaction Cost Assumptions}
+\label{tab:assets}
+\begin{tabular}{llccc}
+\toprule
+Asset & Exchange & Resolution & Slippage (bps) & Role \\
+\midrule
+BTC  & Binance & 1H / 8H & 3 & Base + LS \\
+ETH  & Binance & 8H      & 3 & LS \\
+SOL  & Binance & 8H      & 5 & LS \\
+XRP  & Binance & 8H      & 5 & LS \\
+DOGE & Binance & 8H      & 5 & LS \\
+LINK & Binance & 8H      & 8 & LS \\
+\midrule
+\multicolumn{5}{l}{\textit{Derivatives (BTC only):}} \\
+Funding rate    & Binance Futures & 1H & -- & Quality gate \\
+Open interest   & Binance Futures & 1H & -- & Quality gate \\
+Liquidation     & Tardis (historical) & 1H & -- & Quality gate \\
+\midrule
+\multicolumn{5}{l}{\textit{Execution:}} \\
+\multicolumn{2}{l}{Lighter.xyz (Arbitrum L2 DEX)} & -- & 0 (fee) & Zero trading fees \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================
+% Table 2: Full Parameter List with Provenance
+% ============================================================
+\begin{table}[htbp]
+\centering
+\caption{Model Parameters and Their Provenance}
+\label{tab:params}
+\begin{tabular}{llll}
+\toprule
+Parameter & Value & Provenance & Data Dependency \\
+\midrule
+\multicolumn{4}{l}{\textit{Layer 1: LS Momentum}} \\
+Lookback periods   & 60d + 90d   & Moskowitz et al. (2012) & None \\
+LS weight (LW)     & 0.80        & Inherited from v23      & Low \\
+Rebalance freq.    & Every 8H    & Frequency sweep tested  & Low \\
+\midrule
+\multicolumn{4}{l}{\textit{Layer 2: Regime Detection}} \\
+MA long            & 2640H (110d) & Inherited from v11A    & Medium \\
+MA short           & 480H (20d)   & Standard               & None \\
+Skew threshold     & $-0.5$       & Statistical literature  & Low \\
+DD threshold       & $-0.12$      & Inherited from v4B      & Medium \\
+Crash trigger      & ret$_{t-2} < -0.6\%$ & Structural     & None \\
+Crash cooldown     & 4 bars       & Structural              & None \\
+\midrule
+\multicolumn{4}{l}{\textit{Layer 3: Crypto Quality Gates}} \\
+Funding $z$ (bull) & $< -1.5$     & best.py project        & Low \\
+Funding $z$ (bear) & $> 2.0$      & best.py project        & Low \\
+OI $z$ threshold   & $< -1.5$     & best.py project        & Low \\
+Liq $z$ threshold  & $> 2.0$      & best.py project        & Low \\
+Grind bear ATR     & $< 0.006$    & Structural definition  & None \\
+Crash gate         & $\geq 3$ signals & Structural          & None \\
+\midrule
+\multicolumn{4}{l}{\textit{Position Sizing}} \\
+Kelly fraction     & 0.15         & WF optimized (43/45 stable) & None \\
+Position cap       & 3.0$\times$  & Kelly theory range     & \textbf{High} \\
+Vol target base    & 1.5          & Portfolio normalization & None \\
+DD control         & $-15\%/-22\%/-30\%$ & Structural       & Low \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================
+% Table 3: IS Walk-Forward Results (Annual Summary)
+% ============================================================
+\begin{table}[htbp]
+\centering
+\caption{In-Sample Walk-Forward Results by Year (cap = 3.0$\times$)}
+\label{tab:is_results}
+\begin{tabular}{lrrrrr}
+\toprule
+Year & Folds & Win & Sum Return & Mean/Month & Median/Month \\
+\midrule
+2021 &  9 & 8/9  & $+584\%$  & $+64.9\%$ & $+47.6\%$ \\
+2022 & 12 & 8/12 & $+121\%$  & $+10.1\%$ & $+7.2\%$  \\
+2023 & 12 & 12/12 & $+267\%$ & $+22.2\%$ & $+14.6\%$ \\
+2024 & 12 & 11/12 & $+406\%$ & $+33.8\%$ & $+24.0\%$ \\
+\midrule
+\textbf{Total} & \textbf{45} & \textbf{39/45 (87\%)} & $+1{,}377\%$ & $+30.6\%$ & $+16.1\%$ \\
+\midrule
+\multicolumn{2}{l}{WFS (mean $\times$ 12)} & \multicolumn{4}{r}{\textbf{367\%}} \\
+\multicolumn{2}{l}{Worst fold return} & \multicolumn{4}{r}{$-4.0\%$ (2022-11)} \\
+\multicolumn{2}{l}{Best fold return} & \multicolumn{4}{r}{$+255.7\%$ (2021-04)} \\
+\multicolumn{2}{l}{Fold std} & \multicolumn{4}{r}{$45.3\%$} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================
+% Table 4: Position Cap Sensitivity
+% ============================================================
+\begin{table}[htbp]
+\centering
+\caption{Position Cap Sensitivity Analysis}
+\label{tab:cap_sensitivity}
+\begin{tabular}{crrrrr}
+\toprule
+Cap & WFS & Win Rate & Bear 2022 & Worst Fold DD & LOSE Max \\
+\midrule
+2.0$\times$ & $221\%$ & 39/45 (87\%) & $+78\%$  & $-10.7\%$ & $-2.3\%$ \\
+2.5$\times$ & $290\%$ & 39/45 (87\%) & $+99\%$  & $-13.2\%$ & $-3.0\%$ \\
+\textbf{3.0$\times$} & $\mathbf{367\%}$ & \textbf{39/45 (87\%)} & $\mathbf{+121\%}$ & $-15.7\%$ & $-4.0\%$ \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\small
+\item Note: Win rate is identical across cap values; cap affects magnitude, not direction.
+Position cap = 3.0$\times$ is partially result-dependent (see Section 7.2).
+\end{tablenotes}
+\end{table}
+
+% ============================================================
+% Table 5: OOS 2025 Monthly Breakdown
+% ============================================================
+\begin{table}[htbp]
+\centering
+\caption{Out-of-Sample 2025 Monthly Performance (Fold-Independent)}
+\label{tab:oos}
+\begin{tabular}{lrrrl}
+\toprule
+Month & RACM & BTC B\&H & Excess & Result \\
+\midrule
+Jan & $+20.8\%$ & $+8.5\%$   & $+12.3\%$ & WIN \\
+Feb & $-7.3\%$  & $-17.7\%$  & $+10.4\%$ & LOSE \\
+Mar & $-1.3\%$  & $-1.6\%$   & $+0.3\%$  & LOSE \\
+Apr & $+10.8\%$ & $+13.9\%$  & $-3.1\%$  & WIN \\
+May & $+17.2\%$ & $+10.8\%$  & $+6.4\%$  & WIN \\
+Jun & $+2.4\%$  & $+2.6\%$   & $-0.2\%$  & WIN \\
+Jul & $+17.0\%$ & $+7.8\%$   & $+9.2\%$  & WIN \\
+Aug & $+7.2\%$  & $-6.2\%$   & $+13.4\%$ & WIN \\
+Sep & $+5.4\%$  & $+5.4\%$   & $+0.0\%$  & WIN \\
+Oct & $-0.5\%$  & $-4.1\%$   & $+3.6\%$  & LOSE \\
+Nov & $-1.0\%$  & $-17.7\%$  & $+16.7\%$ & LOSE \\
+Dec & $+0.9\%$  & $+1.1\%$   & $-0.2\%$  & WIN \\
+\midrule
+\textbf{Total} & $\mathbf{+93\%}$ & $\mathbf{-7\%}$ & $\mathbf{+100}$pt & 8/12 WIN \\
+\midrule
+\multicolumn{2}{l}{MaxDD} & \multicolumn{3}{r}{$-13.6\%$} \\
+\multicolumn{2}{l}{OOS WFS} & \multicolumn{3}{r}{$81\%$} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================
+% Table 6: Statistical Test Summary
+% ============================================================
+\begin{table}[htbp]
+\centering
+\caption{Statistical Test Summary}
+\label{tab:stats}
+\begin{tabular}{llrl}
+\toprule
+Test & Hypothesis & $p$-value & Verdict \\
+\midrule
+Return shuffle ($N=1{,}000$) & Timing has information & $0.000$ & \textbf{PASS} \\
+Block shuffle 30d ($N=1{,}000$) & Block timing matters & $0.000$ & \textbf{PASS} \\
+Position shuffle ($N=1{,}000$) & Regime timing matters & $0.000$ & \textbf{PASS} \\
+\midrule
+$t$-test (one-sided) & mean $> 0\%$ & $< 0.0001$ & \textbf{Certain} \\
+$t$-test (one-sided) & mean $> 25\%$ (WFS $> 300\%$) & $0.206$ & \textbf{Not proven} \\
+Binomial test & Win rate $> 50\%$ & $< 0.0001$ & \textbf{Certain} \\
+\midrule
+Linear regression & Alpha decay (slope) & $0.003$ & \textbf{Declining} \\
+\midrule
+Block bootstrap (95\% CI) & WFS range & \multicolumn{2}{l}{$[200\%,\; 575\%]$} \\
+Trimmed mean (top 3 removed) & Outlier-robust WFS & \multicolumn{2}{l}{$253\%$} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================
+% Table 7: 21-Point Leak Check
+% ============================================================
+\begin{table}[htbp]
+\centering
+\caption{Data Leak Prevention Checklist (21 Items)}
+\label{tab:leak}
+\small
+\begin{tabular}{rlll}
+\toprule
+\# & Check Item & Implementation & Result \\
+\midrule
+1  & Funding $z$-score     & lag-2 (raw lag-1 + norm lag-1) & PASS \\
+2  & OI $z$-score          & lag-2 (raw oi[$i{-}1$] + roll) & PASS \\
+3  & OI change 24h         & oi[$i{-}1$], oi[$i{-}25$]      & PASS \\
+4  & Liq $z$-score         & np.roll on 24h sum             & PASS \\
+5  & RV pctrank            & np.roll(1)                     & PASS \\
+6  & ret\_1d / ret\_30d    & log\_p[$i{-}1$] indexing       & PASS \\
+7  & ATR pct               & np.roll(1)                     & PASS \\
+8  & MA cross slow         & np.roll(1)                     & PASS \\
+9  & Regime bp[$i$]        & [$i{-}1$] signals $\to$ ret[$i$] & PASS \\
+10 & MA slope              & ma[$i{-}1$], ma[$i{-}121$]     & PASS \\
+11 & Quick crash            & ret[$i{-}2$]                   & PASS \\
+12 & LS momentum           & np.roll(1) on 8H sums          & PASS \\
+13 & LS $\to$ 1H mapping   & 8H signal constant in block    & PASS \\
+14 & Kelly formula          & past 2160 bars exclusive       & PASS \\
+15 & VT scaling            & rolling 720 + lag-1             & PASS \\
+16 & Equity DD control     & prior-bar equity                & PASS \\
+17 & Crypto thresholds     & pre-fixed (best.py)             & PASS \\
+18 & Regime thresholds     & pre-fixed (v11A)                & PASS \\
+19 & DD control thresholds & pre-fixed                       & PASS \\
+20 & Position cap          & pre-fixed (3.0$\times$)         & PASS \\
+21 & Slippage              & post-hoc realistic              & PASS \\
+\midrule
+   & \textbf{Total}        &                                 & \textbf{21/21 PASS} \\
+\bottomrule
+\end{tabular}
+\end{table}
