@@ -1,0 +1,40 @@
+\begin{thebibliography}{5}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Ang and Timmermann(2012)]{ang2012regime}
+Andrew Ang and Allan Timmermann.
+\newblock Regime changes and financial markets.
+\newblock \emph{Annual Review of Financial Economics}, 4\penalty0 (1):\penalty0
+  313--337, 2012.
+
+\bibitem[Grobys et~al.(2020)Grobys, Ahmed, and Sapkota]{grobys2020momentum}
+Klaus Grobys, Shaker Ahmed, and Niranjan Sapkota.
+\newblock When bitcoin has the flu: On bitcoin's performance to cope with
+  shocks.
+\newblock \emph{Applied Economics}, 52\penalty0 (42):\penalty0 4630--4645,
+  2020.
+
+\bibitem[Jegadeesh and Titman(1993)]{jegadeesh1993returns}
+Narasimhan Jegadeesh and Sheridan Titman.
+\newblock Returns to buying winners and selling losers: Implications for stock
+  market efficiency.
+\newblock \emph{The Journal of Finance}, 48\penalty0 (1):\penalty0 65--91,
+  1993.
+
+\bibitem[Liu et~al.(2022)Liu, Tsyvinski, and Wu]{liu2022risks}
+Yukun Liu, Aleh Tsyvinski, and Xi~Wu.
+\newblock Risks and returns of cryptocurrency.
+\newblock \emph{The Review of Financial Studies}, 35\penalty0 (5):\penalty0
+  2689--2727, 2022.
+
+\bibitem[Moskowitz et~al.(2012)Moskowitz, Ooi, and Pedersen]{moskowitz2012time}
+Tobias~J Moskowitz, Yao~Hua Ooi, and Lasse~Heje Pedersen.
+\newblock Time series momentum.
+\newblock \emph{Journal of Financial Economics}, 104\penalty0 (2):\penalty0
+  228--250, 2012.
+
+\end{thebibliography}

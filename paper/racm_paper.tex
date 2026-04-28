@@ -66,7 +66,7 @@ We trade six cryptocurrency assets available on Lighter.xyz, a zero-fee decentra
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.85\textwidth]{figures/paper/fig1_architecture.png}
+\includegraphics[width=0.85\textwidth]{../figures/paper/fig1_architecture.png}
 \caption{RACM strategy architecture. Three layers process data at different frequencies: LS momentum at 8H, regime detection at 1H, and crypto quality gates at 1H. Position sizing combines Kelly criterion with equity drawdown control.}
 \label{fig:architecture}
 \end{figure}
@@ -120,7 +120,7 @@ Equity drawdown control applies multipliers of $0.7/0.4/0.1$ at DD thresholds of
 \subsection{Walk-Forward Evaluation}
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.7\textwidth]{figures/paper/fig2_wf_scheme.png}
+\includegraphics[width=0.7\textwidth]{../figures/paper/fig2_wf_scheme.png}
 \caption{Walk-forward evaluation scheme: 3-month training / 1-month testing, rolling monthly, yielding 45 folds for the 2021--2024 in-sample period.}
 \label{fig:wf_scheme}
 \end{figure}
@@ -137,7 +137,7 @@ We enforce strict lag-1 or lag-2 constraints on all features (Table~\ref{tab:lea
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{figures/paper/fig4_fold_returns.png}
+\includegraphics[width=\textwidth]{../figures/paper/fig4_fold_returns.png}
 \caption{Walk-forward fold returns for 45 monthly test periods. Win rate: 39/45 (87\%). Green dashed line: mean (30.6\%/month). Orange dotted line: median (16.1\%/month). Maximum loss: $-4.0\%$.}
 \label{fig:fold_returns}
 \end{figure}
@@ -150,14 +150,14 @@ The strategy achieves a WFS of 367\% with an 87\% win rate across 45 folds (Tabl
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.85\textwidth]{figures/paper/fig5_oos_2025.png}
+\includegraphics[width=0.85\textwidth]{../figures/paper/fig5_oos_2025.png}
 \caption{Out-of-sample 2025 monthly performance. RACM: $+93\%$, BTC Buy \& Hold: $-7\%$. The strategy outperforms in 8 of 12 months. Losses in February ($-7.3\%$) and November ($-1.0\%$) coincide with BTC declines of $-17.7\%$, demonstrating loss suppression.}
 \label{fig:oos}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.9\textwidth]{figures/paper/fig6_is_vs_oos.png}
+\includegraphics[width=0.9\textwidth]{../figures/paper/fig6_is_vs_oos.png}
 \caption{IS vs. OOS comparison across WFS, win rate, and maximum fold drawdown. IS-to-OOS degradation in WFS is 78\%, while MaxDD improves from $-15.7\%$ to $-13.6\%$.}
 \label{fig:is_oos}
 \end{figure}
@@ -170,14 +170,14 @@ Table~\ref{tab:oos} presents the month-by-month OOS results. The strategy return
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{figures/paper/fig7_shuffle_tests.png}
+\includegraphics[width=\textwidth]{../figures/paper/fig7_shuffle_tests.png}
 \caption{Permutation test distributions ($N=1{,}000$ each). Red dashed: real WFS (369\%). Blue solid: shuffle mean. All three tests yield $p=0.000$, though we note that shuffling destroys temporal structure, setting a low bar for significance.}
 \label{fig:shuffle}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.9\textwidth]{figures/paper/fig8_param_sensitivity.png}
+\includegraphics[width=0.9\textwidth]{../figures/paper/fig8_param_sensitivity.png}
 \caption{Parameter sensitivity analysis. Red bars indicate current settings. WFS remains within $\pm 10\%$ of the baseline across all parameter perturbations, demonstrating robustness to individual parameter choices.}
 \label{fig:sensitivity}
 \end{figure}
@@ -192,7 +192,7 @@ Alpha decay analysis reveals a statistically significant declining trend ($p=0.0
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.85\textwidth]{figures/paper/fig9_decomposition.png}
+\includegraphics[width=0.85\textwidth]{../figures/paper/fig9_decomposition.png}
 \caption{Return decomposition. At 1$\times$ leverage, the base signal (regime + LS blend) yields WFS $+15\%$, below BTC Buy \& Hold ($+32\%$). The model's value is not directional alpha but crash protection that enables safe leverage application.}
 \label{fig:decomposition}
 \end{figure}
