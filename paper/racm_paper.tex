@@ -131,11 +131,18 @@ Only the Kelly fraction $f$ is optimized per fold from the grid $\{0.15, 0.20, 0
 \subsection{Leak Prevention}
 We enforce strict lag-1 or lag-2 constraints on all features (Table~\ref{tab:leak}). No future information enters any signal computation.
 
+\input{tables}  % Tables 1--7 placed here; LaTeX floats distribute them across pages
+
 % ============================================================
 \section{In-Sample Results (2021--2024)}
 \label{sec:is}
 
-\input{tables}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../figures/equity_curve.png}
+\caption{In-sample equity curve (log scale). RACM strategy vs.\ BTC Buy \& Hold, 2020--2024. The strategy maintains growth through the 2022 bear market (red shaded region) while BTC declines 65\%.}
+\label{fig:equity_curve}
+\end{figure}
 
 \begin{figure}[htbp]
 \centering
@@ -144,7 +151,7 @@ We enforce strict lag-1 or lag-2 constraints on all features (Table~\ref{tab:lea
 \label{fig:fold_returns}
 \end{figure}
 
-The strategy achieves a WFS of 367\% with an 87\% win rate across 45 folds (Table~\ref{tab:is_results}). During the 2022 bear market (BTC: $-65\%$), the strategy returns $+121\%$, demonstrating the regime detection system's crash protection capability. The six losing folds ($-4.0\%$ maximum) all correspond to correlated crash events (Luna/UST, FTX, JPY carry trade unwind) where all assets move simultaneously, negating the LS spread.
+The strategy achieves a WFS of 367\% with an 87\% win rate across 45 folds (Table~\ref{tab:is_results}). During the 2022 bear market (BTC: $-65\%$), the strategy returns $+121\%$, demonstrating the regime detection system's crash protection capability (Figure~\ref{fig:equity_curve}). The six losing folds ($-4.0\%$ maximum) all correspond to correlated crash events (Luna/UST, FTX, JPY carry trade unwind) where all assets move simultaneously, negating the LS spread. Position cap sensitivity is shown in Table~\ref{tab:cap_sensitivity}: win rate is identical across cap values, but return magnitude scales with leverage.
 
 % ============================================================
 \section{Out-of-Sample Validation (2025)}
@@ -210,6 +217,13 @@ The strategy's capacity is limited to approximately \$50K--\$200K due to DEX liq
 
 \subsection{Structural Weakness}
 The strategy fails when all assets move in perfect correlation (Luna crash, FTX collapse, JPY carry unwind). In these events, the LS spread collapses. However, losses are contained to $-4.0\%$ per fold maximum, and recovery occurs within 2--3 months.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../figures/paper/fig10_dashboard.png}
+\caption{Summary dashboard. Key metrics, annual returns, statistical test results, and honest limitations in a single view. The statistically defensible claims (win rate $>50\%$ and positive OOS returns) are highlighted alongside limitations that cannot be resolved statistically (WFS $>300\%$ and alpha decay).}
+\label{fig:dashboard}
+\end{figure}
 
 % ============================================================
 \section{Conclusion}

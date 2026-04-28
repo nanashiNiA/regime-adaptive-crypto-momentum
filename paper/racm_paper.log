@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.28 (MiKTeX 25.12) (preloaded format=pdflatex 2026.4.29)  29 APR 2026 02:35
+This is pdfTeX, Version 3.141592653-2.6-1.40.28 (MiKTeX 25.12) (preloaded format=pdflatex 2026.4.29)  29 APR 2026 02:52
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -500,7 +500,7 @@ File: ../figures/paper/fig2_wf_scheme.png Graphic file (type png)
 Package pdftex.def Info: ../figures/paper/fig2_wf_scheme.png  used on input lin
 e 125.
 (pdftex.def)             Requested size: 318.66948pt x 109.43193pt.
-(tables.tex [4]
+(tables.tex
 Overfull \hbox (40.09735pt too wide) in paragraph at lines 37--69
  [][] 
  []
@@ -511,48 +511,61 @@ Overfull \hbox (17.62161pt too wide) in paragraph at lines 159--177
  []
 
 )
-<../figures/paper/fig4_fold_returns.png, id=183, 713.3049pt x 279.6849pt>
+<../figures/equity_curve.png, id=171, 1011.78pt x 433.62pt>
+File: ../figures/equity_curve.png Graphic file (type png)
+<use ../figures/equity_curve.png>
+Package pdftex.def Info: ../figures/equity_curve.png  used on input line 142.
+(pdftex.def)             Requested size: 455.24411pt x 195.10735pt.
+ [4] [5 <../figures/paper/fig2_wf_scheme.png>] [6] [7] [8]
+<../figures/paper/fig4_fold_returns.png, id=209, 713.3049pt x 279.6849pt>
 File: ../figures/paper/fig4_fold_returns.png Graphic file (type png)
 <use ../figures/paper/fig4_fold_returns.png>
 Package pdftex.def Info: ../figures/paper/fig4_fold_returns.png  used on input 
-line 142.
+line 149.
 (pdftex.def)             Requested size: 455.24411pt x 178.50267pt.
-<../figures/paper/fig5_oos_2025.png, id=185, 568.7649pt x 279.6849pt>
+ [9 <../figures/equity_curve.png> <../figures/paper/fig4_fold_returns.png>]
+<../figures/paper/fig5_oos_2025.png, id=221, 568.7649pt x 279.6849pt>
 File: ../figures/paper/fig5_oos_2025.png Graphic file (type png)
 <use ../figures/paper/fig5_oos_2025.png>
 Package pdftex.def Info: ../figures/paper/fig5_oos_2025.png  used on input line
- 155.
+ 162.
 (pdftex.def)             Requested size: 386.96027pt x 190.28563pt.
-<../figures/paper/fig6_is_vs_oos.png, id=186, 857.604pt x 285.7074pt>
+<../figures/paper/fig6_is_vs_oos.png, id=222, 857.604pt x 285.7074pt>
 File: ../figures/paper/fig6_is_vs_oos.png Graphic file (type png)
 <use ../figures/paper/fig6_is_vs_oos.png>
 Package pdftex.def Info: ../figures/paper/fig6_is_vs_oos.png  used on input lin
-e 162.
+e 169.
 (pdftex.def)             Requested size: 409.71692pt x 136.49277pt.
- [5 <../figures/paper/fig2_wf_scheme.png>] [6] [7] [8 <../figures/paper/fig4_fo
-ld_returns.png>] [9 <../figures/paper/fig5_oos_2025.png> <../figures/paper/fig6
-_is_vs_oos.png>]
-<../figures/paper/fig7_shuffle_tests.png, id=223, 857.604pt x 250.2951pt>
+<../figures/paper/fig7_shuffle_tests.png, id=224, 857.604pt x 250.2951pt>
 File: ../figures/paper/fig7_shuffle_tests.png Graphic file (type png)
 <use ../figures/paper/fig7_shuffle_tests.png>
 Package pdftex.def Info: ../figures/paper/fig7_shuffle_tests.png  used on input
- line 175.
+ line 182.
 (pdftex.def)             Requested size: 455.24411pt x 132.86581pt.
-<../figures/paper/fig8_param_sensitivity.png, id=224, 713.3049pt x 498.1812pt>
+<../figures/paper/fig8_param_sensitivity.png, id=225, 713.3049pt x 498.1812pt>
 File: ../figures/paper/fig8_param_sensitivity.png Graphic file (type png)
 <use ../figures/paper/fig8_param_sensitivity.png>
 Package pdftex.def Info: ../figures/paper/fig8_param_sensitivity.png  used on i
-nput line 182.
+nput line 189.
 (pdftex.def)             Requested size: 409.71692pt x 286.1555pt.
-<../figures/paper/fig9_decomposition.png, id=226, 568.7649pt x 348.1005pt>
+ [10 <../figures/paper/fig5_oos_2025.png> <../figures/paper/fig6_is_vs_oos.png>
+] [11 <../figures/paper/fig7_shuffle_tests.png> <../figures/paper/fig8_param_se
+nsitivity.png>]
+<../figures/paper/fig9_decomposition.png, id=243, 568.7649pt x 348.1005pt>
 File: ../figures/paper/fig9_decomposition.png Graphic file (type png)
 <use ../figures/paper/fig9_decomposition.png>
 Package pdftex.def Info: ../figures/paper/fig9_decomposition.png  used on input
- line 197.
+ line 204.
 (pdftex.def)             Requested size: 386.96027pt x 236.83267pt.
- [10 <../figures/paper/fig7_shuffle_tests.png>] [11 <../figures/paper/fig8_para
-m_sensitivity.png> <../figures/paper/fig9_decomposition.png>]
-[12] (racm_paper.bbl) [13] [14] (racm_paper.aux)
+ [12 <../figures/paper/fig9_decomposition.png>]
+<../figures/paper/fig10_dashboard.png, id=251, 686.565pt x 409.0482pt>
+File: ../figures/paper/fig10_dashboard.png Graphic file (type png)
+<use ../figures/paper/fig10_dashboard.png>
+Package pdftex.def Info: ../figures/paper/fig10_dashboard.png  used on input li
+ne 223.
+(pdftex.def)             Requested size: 455.24411pt x 271.22719pt.
+ [13 <../figures/paper/fig10_dashboard.png>] (racm_paper.bbl) [14] [15] (racm_p
+aper.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2025-12-24>
@@ -561,13 +574,13 @@ Package rerunfilecheck Info: File `racm_paper.out' has not changed.
 (rerunfilecheck)             Checksum: BEA95F6C6C1CA69379DFD19218CEA49E;4135.
  ) 
 Here is how much of TeX's memory you used:
- 12455 strings out of 467871
- 195631 string characters out of 5418860
- 634518 words of memory out of 5000000
- 41101 multiletter control sequences out of 15000+600000
+ 12474 strings out of 467871
+ 196242 string characters out of 5418860
+ 639067 words of memory out of 5000000
+ 41117 multiletter control sequences out of 15000+600000
  650415 words of font info for 100 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,11n,79p,957b,480s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,11n,79p,957b,534s stack positions out of 10000i,1000n,20000p,200000b,200000s
  <C:\Users\A701\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ectt1
 200.pk> <C:\Users\A701\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\
 tcrm1200.pk> <C:\Users\A701\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dp
@@ -598,9 +611,9 @@ pData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Users
 /A701/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy8.pfb><C
 :/Users/A701/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/symbols/
 msbm10.pfb>
-Output written on racm_paper.pdf (14 pages, 1366139 bytes).
+Output written on racm_paper.pdf (15 pages, 1685214 bytes).
 PDF statistics:
- 893 PDF objects out of 1000 (max. 8388607)
- 75 named destinations out of 1000 (max. 500000)
- 233 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 905 PDF objects out of 1000 (max. 8388607)
+ 78 named destinations out of 1000 (max. 500000)
+ 243 words of extra memory for PDF output out of 10000 (max. 10000000)
 

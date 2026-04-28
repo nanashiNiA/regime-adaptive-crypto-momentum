@@ -29,13 +29,8 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.6}Walk-Forward Evaluation}{4}{subsection.3.6}\protected@file@percent }
 \@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Walk-forward evaluation scheme: 3-month training / 1-month testing, rolling monthly, yielding 45 folds for the 2021--2024 in-sample period.}}{5}{figure.caption.2}\protected@file@percent }
 \newlabel{fig:wf_scheme}{{2}{5}{Walk-forward evaluation scheme: 3-month training / 1-month testing, rolling monthly, yielding 45 folds for the 2021--2024 in-sample period}{figure.caption.2}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.7}Leak Prevention}{5}{subsection.3.7}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {4}In-Sample Results (2021--2024)}{5}{section.4}\protected@file@percent }
-\newlabel{sec:is}{{4}{5}{In-Sample Results (2021--2024)}{section.4}{}}
 \@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Asset Universe, Data Sources, and Transaction Cost Assumptions}}{5}{table.caption.3}\protected@file@percent }
 \newlabel{tab:assets}{{1}{5}{Asset Universe, Data Sources, and Transaction Cost Assumptions}{table.caption.3}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {5}Out-of-Sample Validation (2025)}{5}{section.5}\protected@file@percent }
-\newlabel{sec:oos}{{5}{5}{Out-of-Sample Validation (2025)}{section.5}{}}
 \@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Model Parameters and Their Provenance}}{6}{table.caption.4}\protected@file@percent }
 \newlabel{tab:params}{{2}{6}{Model Parameters and Their Provenance}{table.caption.4}{}}
 \@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces In-Sample Walk-Forward Results by Year (cap = 3.0$\times $)}}{6}{table.caption.5}\protected@file@percent }
@@ -48,28 +43,37 @@
 \newlabel{tab:stats}{{6}{7}{Statistical Test Summary}{table.caption.8}{}}
 \@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces Data Leak Prevention Checklist (21 Items)}}{8}{table.caption.9}\protected@file@percent }
 \newlabel{tab:leak}{{7}{8}{Data Leak Prevention Checklist (21 Items)}{table.caption.9}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Walk-forward fold returns for 45 monthly test periods. Win rate: 39/45 (87\%). Green dashed line: mean (30.6\%/month). Orange dotted line: median (16.1\%/month). Maximum loss: $-4.0\%$.}}{8}{figure.caption.10}\protected@file@percent }
-\newlabel{fig:fold_returns}{{3}{8}{Walk-forward fold returns for 45 monthly test periods. Win rate: 39/45 (87\%). Green dashed line: mean (30.6\%/month). Orange dotted line: median (16.1\%/month). Maximum loss: $-4.0\%$}{figure.caption.10}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Out-of-sample 2025 monthly performance. RACM: $+93\%$, BTC Buy \& Hold: $-7\%$. The strategy outperforms in 8 of 12 months. Losses in February ($-7.3\%$) and November ($-1.0\%$) coincide with BTC declines of $-17.7\%$, demonstrating loss suppression.}}{9}{figure.caption.11}\protected@file@percent }
-\newlabel{fig:oos}{{4}{9}{Out-of-sample 2025 monthly performance. RACM: $+93\%$, BTC Buy \& Hold: $-7\%$. The strategy outperforms in 8 of 12 months. Losses in February ($-7.3\%$) and November ($-1.0\%$) coincide with BTC declines of $-17.7\%$, demonstrating loss suppression}{figure.caption.11}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces IS vs. OOS comparison across WFS, win rate, and maximum fold drawdown. IS-to-OOS degradation in WFS is 78\%, while MaxDD improves from $-15.7\%$ to $-13.6\%$.}}{9}{figure.caption.12}\protected@file@percent }
-\newlabel{fig:is_oos}{{5}{9}{IS vs. OOS comparison across WFS, win rate, and maximum fold drawdown. IS-to-OOS degradation in WFS is 78\%, while MaxDD improves from $-15.7\%$ to $-13.6\%$}{figure.caption.12}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {6}Robustness and Statistical Tests}{10}{section.6}\protected@file@percent }
-\newlabel{sec:robustness}{{6}{10}{Robustness and Statistical Tests}{section.6}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Permutation test distributions ($N=1{,}000$ each). Red dashed: real WFS (369\%). Blue solid: shuffle mean. All three tests yield $p=0.000$, though we note that shuffling destroys temporal structure, setting a low bar for significance.}}{10}{figure.caption.13}\protected@file@percent }
-\newlabel{fig:shuffle}{{6}{10}{Permutation test distributions ($N=1{,}000$ each). Red dashed: real WFS (369\%). Blue solid: shuffle mean. All three tests yield $p=0.000$, though we note that shuffling destroys temporal structure, setting a low bar for significance}{figure.caption.13}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {7}Discussion}{10}{section.7}\protected@file@percent }
-\newlabel{sec:discussion}{{7}{10}{Discussion}{section.7}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.1}Source of Returns}{10}{subsection.7.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.2}The Leverage Illusion}{10}{subsection.7.2}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Parameter sensitivity analysis. Red bars indicate current settings. WFS remains within $\pm 10\%$ of the baseline across all parameter perturbations, demonstrating robustness to individual parameter choices.}}{11}{figure.caption.14}\protected@file@percent }
-\newlabel{fig:sensitivity}{{7}{11}{Parameter sensitivity analysis. Red bars indicate current settings. WFS remains within $\pm 10\%$ of the baseline across all parameter perturbations, demonstrating robustness to individual parameter choices}{figure.caption.14}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Return decomposition. At 1$\times $ leverage, the base signal (regime + LS blend) yields WFS $+15\%$, below BTC Buy \& Hold ($+32\%$). The model's value is not directional alpha but crash protection that enables safe leverage application.}}{11}{figure.caption.15}\protected@file@percent }
-\newlabel{fig:decomposition}{{8}{11}{Return decomposition. At 1$\times $ leverage, the base signal (regime + LS blend) yields WFS $+15\%$, below BTC Buy \& Hold ($+32\%$). The model's value is not directional alpha but crash protection that enables safe leverage application}{figure.caption.15}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.3}Practical Constraints}{12}{subsection.7.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.4}Structural Weakness}{12}{subsection.7.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {8}Conclusion}{12}{section.8}\protected@file@percent }
-\newlabel{sec:conclusion}{{8}{12}{Conclusion}{section.8}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.7}Leak Prevention}{9}{subsection.3.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4}In-Sample Results (2021--2024)}{9}{section.4}\protected@file@percent }
+\newlabel{sec:is}{{4}{9}{In-Sample Results (2021--2024)}{section.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces In-sample equity curve (log scale). RACM strategy vs.\ BTC Buy \& Hold, 2020--2024. The strategy maintains growth through the 2022 bear market (red shaded region) while BTC declines 65\%.}}{9}{figure.caption.10}\protected@file@percent }
+\newlabel{fig:equity_curve}{{3}{9}{In-sample equity curve (log scale). RACM strategy vs.\ BTC Buy \& Hold, 2020--2024. The strategy maintains growth through the 2022 bear market (red shaded region) while BTC declines 65\%}{figure.caption.10}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Walk-forward fold returns for 45 monthly test periods. Win rate: 39/45 (87\%). Green dashed line: mean (30.6\%/month). Orange dotted line: median (16.1\%/month). Maximum loss: $-4.0\%$.}}{9}{figure.caption.11}\protected@file@percent }
+\newlabel{fig:fold_returns}{{4}{9}{Walk-forward fold returns for 45 monthly test periods. Win rate: 39/45 (87\%). Green dashed line: mean (30.6\%/month). Orange dotted line: median (16.1\%/month). Maximum loss: $-4.0\%$}{figure.caption.11}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Out-of-Sample Validation (2025)}{10}{section.5}\protected@file@percent }
+\newlabel{sec:oos}{{5}{10}{Out-of-Sample Validation (2025)}{section.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Out-of-sample 2025 monthly performance. RACM: $+93\%$, BTC Buy \& Hold: $-7\%$. The strategy outperforms in 8 of 12 months. Losses in February ($-7.3\%$) and November ($-1.0\%$) coincide with BTC declines of $-17.7\%$, demonstrating loss suppression.}}{10}{figure.caption.12}\protected@file@percent }
+\newlabel{fig:oos}{{5}{10}{Out-of-sample 2025 monthly performance. RACM: $+93\%$, BTC Buy \& Hold: $-7\%$. The strategy outperforms in 8 of 12 months. Losses in February ($-7.3\%$) and November ($-1.0\%$) coincide with BTC declines of $-17.7\%$, demonstrating loss suppression}{figure.caption.12}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces IS vs. OOS comparison across WFS, win rate, and maximum fold drawdown. IS-to-OOS degradation in WFS is 78\%, while MaxDD improves from $-15.7\%$ to $-13.6\%$.}}{10}{figure.caption.13}\protected@file@percent }
+\newlabel{fig:is_oos}{{6}{10}{IS vs. OOS comparison across WFS, win rate, and maximum fold drawdown. IS-to-OOS degradation in WFS is 78\%, while MaxDD improves from $-15.7\%$ to $-13.6\%$}{figure.caption.13}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Permutation test distributions ($N=1{,}000$ each). Red dashed: real WFS (369\%). Blue solid: shuffle mean. All three tests yield $p=0.000$, though we note that shuffling destroys temporal structure, setting a low bar for significance.}}{11}{figure.caption.14}\protected@file@percent }
+\newlabel{fig:shuffle}{{7}{11}{Permutation test distributions ($N=1{,}000$ each). Red dashed: real WFS (369\%). Blue solid: shuffle mean. All three tests yield $p=0.000$, though we note that shuffling destroys temporal structure, setting a low bar for significance}{figure.caption.14}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Parameter sensitivity analysis. Red bars indicate current settings. WFS remains within $\pm 10\%$ of the baseline across all parameter perturbations, demonstrating robustness to individual parameter choices.}}{11}{figure.caption.15}\protected@file@percent }
+\newlabel{fig:sensitivity}{{8}{11}{Parameter sensitivity analysis. Red bars indicate current settings. WFS remains within $\pm 10\%$ of the baseline across all parameter perturbations, demonstrating robustness to individual parameter choices}{figure.caption.15}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Robustness and Statistical Tests}{12}{section.6}\protected@file@percent }
+\newlabel{sec:robustness}{{6}{12}{Robustness and Statistical Tests}{section.6}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {7}Discussion}{12}{section.7}\protected@file@percent }
+\newlabel{sec:discussion}{{7}{12}{Discussion}{section.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Return decomposition. At 1$\times $ leverage, the base signal (regime + LS blend) yields WFS $+15\%$, below BTC Buy \& Hold ($+32\%$). The model's value is not directional alpha but crash protection that enables safe leverage application.}}{12}{figure.caption.16}\protected@file@percent }
+\newlabel{fig:decomposition}{{9}{12}{Return decomposition. At 1$\times $ leverage, the base signal (regime + LS blend) yields WFS $+15\%$, below BTC Buy \& Hold ($+32\%$). The model's value is not directional alpha but crash protection that enables safe leverage application}{figure.caption.16}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1}Source of Returns}{12}{subsection.7.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2}The Leverage Illusion}{12}{subsection.7.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.3}Practical Constraints}{13}{subsection.7.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.4}Structural Weakness}{13}{subsection.7.4}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces Summary dashboard. Key metrics, annual returns, statistical test results, and honest limitations in a single view. The statistically defensible claims (win rate $>50\%$ and positive OOS returns) are highlighted alongside limitations that cannot be resolved statistically (WFS $>300\%$ and alpha decay).}}{13}{figure.caption.17}\protected@file@percent }
+\newlabel{fig:dashboard}{{10}{13}{Summary dashboard. Key metrics, annual returns, statistical test results, and honest limitations in a single view. The statistically defensible claims (win rate $>50\%$ and positive OOS returns) are highlighted alongside limitations that cannot be resolved statistically (WFS $>300\%$ and alpha decay)}{figure.caption.17}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {8}Conclusion}{13}{section.8}\protected@file@percent }
+\newlabel{sec:conclusion}{{8}{13}{Conclusion}{section.8}{}}
 \bibstyle{plainnat}
 \bibdata{references}
 \bibcite{ang2012regime}{{1}{2012}{{Ang and Timmermann}}{{}}}
@@ -77,8 +81,8 @@
 \bibcite{jegadeesh1993returns}{{3}{1993}{{Jegadeesh and Titman}}{{}}}
 \bibcite{liu2022risks}{{4}{2022}{{Liu et~al.}}{{Liu, Tsyvinski, and Wu}}}
 \bibcite{moskowitz2012time}{{5}{2012}{{Moskowitz et~al.}}{{Moskowitz, Ooi, and Pedersen}}}
-\@writefile{toc}{\contentsline {section}{\numberline {A}45-Fold Walk-Forward Detailed Results}{13}{appendix.A}\protected@file@percent }
-\newlabel{app:folds}{{A}{13}{45-Fold Walk-Forward Detailed Results}{appendix.A}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces Complete 45-Fold Walk-Forward Results (cap = 3.0$\times $, KF = 0.15)}}{14}{table.caption.20}\protected@file@percent }
-\newlabel{tab:all_folds}{{8}{14}{Complete 45-Fold Walk-Forward Results (cap = 3.0$\times $, KF = 0.15)}{table.caption.20}{}}
-\gdef \@abspage@last{14}
+\@writefile{toc}{\contentsline {section}{\numberline {A}45-Fold Walk-Forward Detailed Results}{15}{appendix.A}\protected@file@percent }
+\newlabel{app:folds}{{A}{15}{45-Fold Walk-Forward Detailed Results}{appendix.A}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces Complete 45-Fold Walk-Forward Results (cap = 3.0$\times $, KF = 0.15)}}{15}{table.caption.22}\protected@file@percent }
+\newlabel{tab:all_folds}{{8}{15}{Complete 45-Fold Walk-Forward Results (cap = 3.0$\times $, KF = 0.15)}{table.caption.22}{}}
+\gdef \@abspage@last{15}
