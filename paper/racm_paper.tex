@@ -10,15 +10,17 @@
 \usepackage{caption}
 \usepackage{float}
 \usepackage{threeparttable}
+% \usepackage{lineno}  % line numbers for review (enable when submitting)
 
 \title{Regime-Adaptive Cross-Sectional Momentum in Cryptocurrency Markets:\\
 A Walk-Forward Validated Long/Short Strategy\\with Derivatives-Based Quality Gates}
 
-\author{Anonymous}
-\date{\today}
+\author{Takuto Yui\footnote{Graduate School. Email: work.nanashi.taku.774@gmail.com}}
+\date{April 2026}
 
 \begin{document}
 \maketitle
+% \linenumbers  % enable line numbers for peer review
 
 % ============================================================
 \begin{abstract}
@@ -224,7 +226,64 @@ We present RACM, a regime-adaptive cross-sectional momentum strategy for cryptoc
 What we \emph{cannot} claim statistically is WFS $> 300\%$ ($p=0.206$). Alpha shows a significant declining trend ($p=0.003$), suggesting that the strategy's edge may erode over 2--3 years as cryptocurrency markets mature. Future work includes weekly walk-forward validation for larger fold counts, adaptive cap selection, and live trading validation.
 
 % ============================================================
+\section*{Acknowledgments}
+The author thanks [Advisor Name] for valuable guidance and feedback throughout this research.
+
+\section*{Data Availability Statement}
+Price data are publicly available from the Binance API (\url{https://api.binance.com}). Historical derivatives data (funding rates, open interest, liquidation counts) were obtained from Tardis (\url{https://tardis.dev}). The complete backtest code and analysis scripts are available at \url{https://github.com/nanashiNiA/regime-adaptive-crypto-momentum}.
+
+\section*{Declaration of Interest}
+The author declares no competing financial interests or personal relationships that could have influenced the work reported in this paper.
+
+\noindent\textbf{JEL Classification:} G11 (Portfolio Choice), G14 (Information and Market Efficiency), C58 (Financial Econometrics)
+
+% ============================================================
 \bibliographystyle{plainnat}
 \bibliography{references}
+
+% ============================================================
+\appendix
+\section{45-Fold Walk-Forward Detailed Results}
+\label{app:folds}
+
+\begin{table}[htbp]
+\centering
+\caption{Complete 45-Fold Walk-Forward Results (cap = 3.0$\times$, KF = 0.15)}
+\label{tab:all_folds}
+\small
+\begin{tabular}{rlrrl|rlrrl}
+\toprule
+\# & Period & Return & MaxDD & Res. & \# & Period & Return & MaxDD & Res. \\
+\midrule
+1  & 2021-04 & $+255.7$ & $-7.1$ & W & 24 & 2023-03 & $+25.5$ & $-5.4$ & W \\
+2  & 2021-05 & $+98.5$  & $-15.7$ & W & 25 & 2023-04 & $+5.6$  & $-3.8$ & W \\
+3  & 2021-06 & $+3.4$   & $-9.2$ & W & 26 & 2023-05 & $+9.8$  & $-3.1$ & W \\
+4  & 2021-07 & $+5.6$   & $-11.3$ & W & 27 & 2023-06 & $+22.6$ & $-4.8$ & W \\
+5  & 2021-08 & $+47.6$  & $-6.2$ & W & 28 & 2023-07 & $+3.5$  & $-9.4$ & W \\
+6  & 2021-09 & $+44.5$  & $-7.1$ & W & 29 & 2023-08 & $+2.1$  & $-4.4$ & W \\
+7  & 2021-10 & $+63.6$  & $-5.0$ & W & 30 & 2023-09 & $+5.8$  & $-3.3$ & W \\
+8  & 2021-11 & $+66.1$  & $-4.6$ & W & 31 & 2023-10 & $+31.9$ & $-3.3$ & W \\
+9  & 2021-12 & $-1.0$   & $-9.4$ & L & 32 & 2023-11 & $+25.4$ & $-6.0$ & W \\
+10 & 2022-01 & $+10.9$  & $-10.0$ & W & 33 & 2023-12 & $+69.5$ & $-5.2$ & W \\
+11 & 2022-02 & $+17.4$  & $-3.4$ & W & 34 & 2024-01 & $+27.5$ & $-5.6$ & W \\
+12 & 2022-03 & $+4.0$   & $-10.1$ & W & 35 & 2024-02 & $+72.1$ & $-2.5$ & W \\
+13 & 2022-04 & $-0.1$   & $-10.5$ & L & 36 & 2024-03 & $+134.5$ & $-4.3$ & W \\
+14 & 2022-05 & $-3.6$   & $-12.1$ & L & 37 & 2024-04 & $+5.9$  & $-6.7$ & W \\
+15 & 2022-06 & $+16.1$  & $-5.6$ & W & 38 & 2024-05 & $+7.4$  & $-5.1$ & W \\
+16 & 2022-07 & $+26.0$  & $-4.1$ & W & 39 & 2024-06 & $+12.9$ & $-3.0$ & W \\
+17 & 2022-08 & $-3.3$   & $-9.9$ & L & 40 & 2024-07 & $+26.4$ & $-3.5$ & W \\
+18 & 2022-09 & $+10.7$  & $-6.1$ & W & 41 & 2024-08 & $-2.7$  & $-10.2$ & L \\
+19 & 2022-10 & $+45.0$  & $-6.5$ & W & 42 & 2024-09 & $+3.6$  & $-4.6$ & W \\
+20 & 2022-11 & $-4.0$   & $-14.1$ & L & 43 & 2024-10 & $+37.4$ & $-3.5$ & W \\
+21 & 2022-12 & $+1.5$   & $-7.6$ & W & 44 & 2024-11 & $+56.6$ & $-7.9$ & W \\
+22 & 2023-01 & $+52.4$  & $-4.8$ & W & 45 & 2024-12 & $+24.0$ & $-5.8$ & W \\
+23 & 2023-02 & $+12.7$  & $-6.0$ & W &    &         &         &        &   \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\small
+\item Returns and MaxDD in percent. W = Win (positive return), L = Lose. Total: 39W / 6L.
+\end{tablenotes}
+\end{table}
 
 \end{document}
