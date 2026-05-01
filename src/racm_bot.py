@@ -25,6 +25,7 @@ import urllib.request
 from src.racm_core import (RACMParams, RACMFeatures, RACMRegime,
                            RACMCryptoGates, RACMKelly, RACMDDControl,
                            RACMLS, safe_val)
+from src.safety_guards import SafetyMiddleware, DataSanityCheck
 
 if sys.platform == 'win32':
     try: sys.stdout.reconfigure(encoding='utf-8')
@@ -149,6 +150,9 @@ class RACMBot:
                 logging.FileHandler(os.path.join(log_dir, 'racm_bot.log'), encoding='utf-8'),
                 logging.StreamHandler(sys.stdout)])
         self.log = logging.getLogger('RACM')
+
+        # Safety middleware
+        self.safety = SafetyMiddleware(self.state_path)
 
         # Auto-warmup Kelly on first startup
         self.warmup_kelly()
@@ -278,6 +282,15 @@ class RACMBot:
         now = datetime.now(timezone.utc)
         self.log.info(f"=== RACM tick @ {now.strftime('%Y-%m-%d %H:%M')} UTC ===")
         p = self.params
+
+        # Pre-tick safety checks
+        can_trade, pre_issues = self.safety.pre_tick(p)
+        for issue in pre_issues:
+            self.log.warning(f"Safety: {issue}")
+        if not can_trade:
+            self.log.error("SAFETY BLOCK: Cannot trade this tick")
+            self.state.save(self.state_path)
+            return
 
         try:
             # ── 1. Fetch BTC 1H ──
@@ -430,6 +443,15 @@ class RACMBot:
             })
             self.state.last_update = now.isoformat()
             self.state.save(self.state_path)
+
+            # Post-tick safety checks
+            post_issues = self.safety.post_tick(
+                price[-1], pnl, self.state.equity, self.state.peak_equity, now)
+            for issue in post_issues:
+                if 'EMERGENCY' in issue:
+                    self.log.error(f"Safety: {issue}")
+                else:
+                    self.log.warning(f"Safety: {issue}")
 
         except Exception as e:
             self.log.error(f"ERROR: {e}", exc_info=True)
